@@ -1,10 +1,10 @@
 /*
-        stdsoap2.c[pp] 2.8.126
+        stdsoap2.c[pp] 2.8.117
 
         gSOAP runtime engine
 
 gSOAP XML Web services tools
-Copyright (C) 2000-2023, Robert van Engelen, Genivia Inc., All Rights Reserved.
+Copyright (C) 2000-2021, Robert van Engelen, Genivia Inc., All Rights Reserved.
 This part of the software is released under ONE of the following licenses:
 GPL or the gSOAP public license.
 --------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
 
 The Initial Developer of the Original Code is Robert A. van Engelen.
-Copyright (C) 2000-2023, Robert van Engelen, Genivia Inc., All Rights Reserved.
+Copyright (C) 2000-2021, Robert van Engelen, Genivia Inc., All Rights Reserved.
 --------------------------------------------------------------------------------
 GPL license.
 
@@ -52,20 +52,10 @@ A commercial use license is available from Genivia, Inc., contact@genivia.com
 --------------------------------------------------------------------------------
 */
 
-#define GSOAP_LIB_VERSION 208126
+#define GSOAP_LIB_VERSION 208117
 
-/* silence GNU's warnings on format nonliteral strings and truncation (snprintf truncates on purpose for safety) */
-#ifdef __GNUC__
-# define GCC_VERSION_AT_LEAST(major, minor, patch) (GCC_VERSION >= (major * 10000 + minor * 100 + patch))
-# pragma GCC diagnostic ignored "-Wformat-nonliteral"
-# if GCC_VERSION_AT_LEAST(7, 0, 0)
-#  pragma GCC diagnostic ignored "-Wformat-truncation"
-# endif
-#endif
-
-/* convert EBCDIC to ASCII */
 #ifdef AS400
-# pragma convert(819)
+# pragma convert(819)   /* EBCDIC to ASCII */
 #endif
 
 #if defined(__gnu_linux__) && !defined(_GNU_SOURCE)
@@ -96,10 +86,10 @@ A commercial use license is available from Genivia, Inc., contact@genivia.com
 #endif
 
 #ifdef __cplusplus
-SOAP_SOURCE_STAMP("@(#) stdsoap2.cpp ver 2.8.126 2023-03-09 00:00:00 GMT")
+SOAP_SOURCE_STAMP("@(#) stdsoap2.cpp ver 2.8.117 2021-08-19 00:00:00 GMT")
 extern "C" {
 #else
-SOAP_SOURCE_STAMP("@(#) stdsoap2.c ver 2.8.126 2023-03-09 00:00:00 GMT")
+SOAP_SOURCE_STAMP("@(#) stdsoap2.c ver 2.8.117 2021-08-19 00:00:00 GMT")
 #endif
 
 /* 8bit character representing unknown character entity or multibyte data */
@@ -204,7 +194,7 @@ static int soap_ssl_init_done = 0;
 static int ssl_auth_init(struct soap*);
 static int ssl_verify_callback(int, X509_STORE_CTX*);
 static int ssl_verify_callback_allow_expired_certificate(int, X509_STORE_CTX*);
-static int ssl_password(char*, int, int, void*);
+static int ssl_password(char*, int, int, void *);
 #endif
 
 #ifdef WITH_GNUTLS
@@ -227,16 +217,7 @@ static const char *ssl_verify(struct soap *soap, const char *host);
 # endif
 #endif
 
-#ifdef WITH_WOLFSSL
-static int soap_ssl_init_done = 0;
-static int ssl_auth_init(struct soap*);
-static int ssl_verify_callback(int, WOLFSSL_X509_STORE_CTX*);
-static int ssl_verify_callback_allow_expired_certificate(int, WOLFSSL_X509_STORE_CTX*);
-static int ssl_password(char*, int, int, void*);
-#endif
-
 #ifdef WITH_SYSTEMSSL
-static int soap_ssl_init_done = 0;
 static int ssl_auth_init(struct soap*);
 static int ssl_recv(int sk, void *s, int n, char *user);
 static int ssl_send(int sk, void *s, int n, char *user);
@@ -305,12 +286,12 @@ static const char *soap_strerror(struct soap*);
   #define SOAP_SOCKBLOCK(fd) \
   { \
     u_long blocking = 0; \
-    ioctl(fd, FIONBIO, (void*)(&blocking)); \
+    ioctl(fd, FIONBIO, (int)(&blocking)); \
   }
   #define SOAP_SOCKNONBLOCK(fd) \
   { \
     u_long nonblocking = 1; \
-    ioctl(fd, FIONBIO, (void*)(&nonblocking)); \
+    ioctl(fd, FIONBIO, (int)(&nonblocking)); \
   }
 #elif defined(__VMS)
   #define SOAP_SOCKBLOCK(fd) \
@@ -629,11 +610,6 @@ fsend(struct soap *soap, const char *s, size_t n)
             r = tcp_select(soap, sk, SOAP_TCP_SELECT_ALL | SOAP_TCP_SELECT_PIP, soap->send_timeout);
           else
 #endif
-#ifdef WITH_WOLFSSL
-          if (soap->ssl)
-            r = tcp_select(soap, sk, SOAP_TCP_SELECT_ALL | SOAP_TCP_SELECT_PIP, soap->send_timeout);
-          else
-#endif
 #ifdef WITH_SYSTEMSSL
           if (soap->ssl)
             r = tcp_select(soap, sk, SOAP_TCP_SELECT_ALL | SOAP_TCP_SELECT_PIP, soap->send_timeout);
@@ -653,11 +629,6 @@ fsend(struct soap *soap, const char *s, size_t n)
 #endif
 #ifdef WITH_GNUTLS
           if (soap->session)
-            r = tcp_select(soap, sk, SOAP_TCP_SELECT_ALL, soap->send_timeout);
-          else
-#endif
-#ifdef WITH_WOLFSSL
-          if (soap->ssl)
             r = tcp_select(soap, sk, SOAP_TCP_SELECT_ALL, soap->send_timeout);
           else
 #endif
@@ -698,11 +669,6 @@ fsend(struct soap *soap, const char *s, size_t n)
 #ifdef WITH_GNUTLS
       if (soap->session)
         nwritten = gnutls_record_send(soap->session, s, n);
-      else
-#endif
-#ifdef WITH_WOLFSSL
-      if (soap->ssl)
-        nwritten = wolfSSL_write(soap->ssl, s, n);
       else
 #endif
 #ifdef WITH_SYSTEMSSL
@@ -782,27 +748,14 @@ fsend(struct soap *soap, const char *s, size_t n)
             err = SOAP_EAGAIN;
         }
 #endif
-#ifdef WITH_WOLFSSL
-        if (soap->ssl && (r = wolfSSL_get_error(soap->ssl, nwritten)) != SSL_ERROR_NONE && r != SSL_ERROR_WANT_READ && r != SSL_ERROR_WANT_WRITE)
-        {
-          soap->errnum = err;
-          return SOAP_EOF;
-        }
-#endif
         if (err == SOAP_EWOULDBLOCK || err == SOAP_EAGAIN)
         {
-#ifdef WITH_OPENSSL
+#if defined(WITH_OPENSSL)
           if (soap->ssl && r == SSL_ERROR_WANT_READ)
             r = tcp_select(soap, sk, SOAP_TCP_SELECT_RCV | SOAP_TCP_SELECT_ERR, soap->send_timeout ? soap->send_timeout : -10000);
           else
-#endif
-#ifdef WITH_GNUTLS
+#elif defined(WITH_GNUTLS)
           if (soap->session && !gnutls_record_get_direction(soap->session))
-            r = tcp_select(soap, sk, SOAP_TCP_SELECT_RCV | SOAP_TCP_SELECT_ERR, soap->send_timeout ? soap->send_timeout : -10000);
-          else
-#endif
-#ifdef WITH_WOLFSSL
-          if (soap->ssl && r == SSL_ERROR_WANT_READ)
             r = tcp_select(soap, sk, SOAP_TCP_SELECT_RCV | SOAP_TCP_SELECT_ERR, soap->send_timeout ? soap->send_timeout : -10000);
           else
 #endif
@@ -1270,15 +1223,6 @@ frecv(struct soap *soap, char *s, size_t n)
       }
       else
 #endif
-#ifdef WITH_WOLFSSL
-      if (soap->ssl)
-      {
-        r = wolfSSL_read(soap->ssl, s, n);
-        if (r >= 0)
-          return (size_t)r;
-      }
-      else
-#endif
 #ifdef WITH_SYSTEMSSL
       if (soap->ssl)
       {
@@ -1332,11 +1276,6 @@ frecv(struct soap *soap, char *s, size_t n)
       if (soap->session && gnutls_record_get_direction(soap->session))
         r = tcp_select(soap, sk, SOAP_TCP_SELECT_SND | SOAP_TCP_SELECT_ERR, soap->recv_timeout ? soap->recv_timeout : 5);
       else
-#ifdef WITH_WOLFSSL
-      if (soap->ssl && err == SSL_ERROR_WANT_WRITE)
-        r = tcp_select(soap, sk, SOAP_TCP_SELECT_SND | SOAP_TCP_SELECT_ERR, soap->recv_timeout ? soap->recv_timeout : 5);
-      else
-#endif
 #elif defined(WITH_SYSTEMSSL)
       if (soap->ssl && err == GSK_WOULD_BLOCK_WRITE)
         r = tcp_select(soap, sk, SOAP_TCP_SELECT_SND | SOAP_TCP_SELECT_ERR, soap->recv_timeout ? soap->recv_timeout : 5);
@@ -1490,7 +1429,6 @@ zlib_again:
     {
       soap_wchar c;
       char *t, tmp[17];
-      unsigned long chunksize;
       if (soap->chunksize)
       {
         soap->buflen = ret = soap->frecv(soap, soap->buf, soap->chunksize > sizeof(soap->buf) ? sizeof(soap->buf) : soap->chunksize);
@@ -1545,15 +1483,8 @@ zlib_again:
       }
       *t = '\0';
       DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Chunk size = %s (hex)\n", tmp));
-      chunksize = soap_strtoul(tmp, &t, 16);
-      if (*t || chunksize > SOAP_MAXHTTPCHUNK || (soap->recv_maxlength && chunksize > soap->recv_maxlength))
-      {
-        DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Chunk size %lu exceeds max\n", chunksize));
-        return soap->error = SOAP_HTTP_ERROR;
-      }
-      soap->chunksize = (size_t)chunksize;
-      soap->buflen = soap->bufidx + soap->chunksize;
-      if (soap->buflen <= soap->bufidx)
+      soap->chunksize = (size_t)soap_strtoul(tmp, &t, 16);
+      if (!soap->chunksize)
       {
         soap->bufidx = soap->buflen = soap->chunkbuflen = 0;
         DBGLOG(TEST, SOAP_MESSAGE(fdebug, "End of chunked message\n"));
@@ -1561,6 +1492,7 @@ zlib_again:
         soap->ahead = EOF;
         break;
       }
+      soap->buflen = soap->bufidx + soap->chunksize;
       DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Moving buf len to idx=%u len=%u (%s)\n", (unsigned int)soap->bufidx, (unsigned int)soap->buflen, tmp));
       if (soap->buflen > soap->chunkbuflen)
       {
@@ -1587,7 +1519,7 @@ zlib_again:
     DBGMSG(RECV, soap->buf, ret);
   }
 #ifdef WITH_ZLIB
-  if ((soap->mode & SOAP_ENC_ZLIB) && soap->d_stream)
+  if ((soap->mode & SOAP_ENC_ZLIB))
   {
     (void)soap_memcpy((void*)soap->z_buf, sizeof(soap->buf), (const void*)soap->buf, sizeof(soap->buf));
     soap->d_stream->next_in = (Byte*)(soap->z_buf + soap->bufidx);
@@ -2180,7 +2112,6 @@ soap_getpi(struct soap *soap)
     s = strstr(buf, " encoding=");
     if (s && s[10])
     {
-      int err;
       if (!soap_tag_cmp(s + 11, "iso-8859-*")
        || !soap_tag_cmp(s + 11, "latin*"))
       {
@@ -2191,12 +2122,6 @@ soap_getpi(struct soap *soap)
       {
         DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Switching to utf-8 encoding\n"));
         soap->mode &= ~SOAP_ENC_LATIN;
-      }
-      else if (soap->fencoding && ((err = soap->fencoding(soap, s + 11)) != SOAP_OK))
-      {
-        DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Callback fencoding returned %d\n", err));
-        soap->error = err;
-        c = EOF;
       }
     }
   }
@@ -4019,7 +3944,7 @@ soap_rand()
 
 /******************************************************************************/
 
-#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_WOLFSSL) || defined(WITH_SYSTEMSSL)
+#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_SYSTEMSSL)
 SOAP_FMAC1
 int
 SOAP_FMAC2
@@ -4089,19 +4014,10 @@ soap_ssl_server_context(struct soap *soap, unsigned short flags, const char *key
     soap->xcred = NULL;
   }
 #endif
-#ifdef WITH_WOLFSSL
-  (void)randfile; (void)sid;
-  if (!soap->fsslverify)
-    soap->fsslverify = ssl_verify_callback;
-  if (soap->ctx)
-    wolfSSL_CTX_free(soap->ctx);
-  soap->ctx = NULL;
-#endif
 #ifdef WITH_SYSTEMSSL
   (void)randfile; (void)sid;
   if (soap->ctx)
     gsk_environment_close(&soap->ctx);
-  soap->ctx = NULL;
 #endif
   err = soap->fsslauth(soap);
 #ifdef WITH_OPENSSL
@@ -4119,7 +4035,7 @@ soap_ssl_server_context(struct soap *soap, unsigned short flags, const char *key
 
 /******************************************************************************/
 
-#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_WOLFSSL) || defined(WITH_SYSTEMSSL)
+#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_SYSTEMSSL)
 SOAP_FMAC1
 int
 SOAP_FMAC2
@@ -4156,19 +4072,10 @@ soap_ssl_client_context(struct soap *soap, unsigned short flags, const char *key
     soap->xcred = NULL;
   }
 #endif
-#ifdef WITH_WOLFSSL
-  (void)randfile;
-  if (!soap->fsslverify)
-    soap->fsslverify = (flags & SOAP_SSL_ALLOW_EXPIRED_CERTIFICATE) == 0 ? ssl_verify_callback : ssl_verify_callback_allow_expired_certificate;
-  if (soap->ctx)
-    wolfSSL_CTX_free(soap->ctx);
-  soap->ctx = NULL;
-#endif
 #ifdef WITH_SYSTEMSSL
   (void)randfile;
   if (soap->ctx)
     gsk_environment_close(&soap->ctx);
-  soap->ctx = NULL;
 #endif
   return soap->fsslauth(soap);
 }
@@ -4176,7 +4083,7 @@ soap_ssl_client_context(struct soap *soap, unsigned short flags, const char *key
 
 /******************************************************************************/
 
-#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_WOLFSSL) || defined(WITH_SYSTEMSSL)
+#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS)
 SOAP_FMAC1
 int
 SOAP_FMAC2
@@ -4201,38 +4108,18 @@ soap_ssl_crl(struct soap *soap, const char *crlfile)
 #endif
   }
   else
-  {
     soap->crlfile = crlfile; /* activate later when store is available */
-  }
 #endif
 #ifdef WITH_GNUTLS
   if (crlfile && soap->xcred)
   {
     if (*crlfile)
-    {
       if (gnutls_certificate_set_x509_crl_file(soap->xcred, crlfile, GNUTLS_X509_FMT_PEM) < 0)
         return soap_set_receiver_error(soap, "SSL/TLS error", "Can't read CRL PEM file", SOAP_SSL_ERROR);
-    }
   }
   else
   {
     soap->crlfile = crlfile; /* activate later when xcred is available */
-  }
-#endif
-#ifdef WITH_WOLFSSL
-  if (crlfile && soap->ctx)
-  {
-    if (*crlfile)
-    {
-#if defined(HAVE_CRL) && !defined(NO_FILESYSTEM)
-      if (wolfSSL_X509_load_crl_file(soap->ctx, crlfile) != SSL_SUCCESS)
-#endif
-        return soap_set_receiver_error(soap, "SSL/TLS error", "Can't read CRL PEM file", SOAP_SSL_ERROR);
-    }
-  }
-  else
-  {
-    soap->crlfile = crlfile; /* activate later when store is available */
   }
 #endif
   return SOAP_OK;
@@ -4241,7 +4128,7 @@ soap_ssl_crl(struct soap *soap, const char *crlfile)
 
 /******************************************************************************/
 
-#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_WOLFSSL) || defined(WITH_SYSTEMSSL)
+#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS)
 SOAP_FMAC1
 void
 SOAP_FMAC2
@@ -4259,7 +4146,7 @@ soap_ssl_init()
     SSL_load_error_strings();
 #endif
 #endif
-#if !defined(WIN32) && !defined(CYGWIN) && !defined(__MINGW32__) && !defined(__MINGW64__) && !defined(VXWORKS)
+#if !defined(WIN32) && !defined(CYGWIN) && !defined(__MINGW32__) && !defined(__MINGW64__)
     if (!RAND_load_file("/dev/urandom", 1024))
 #else
     if (1)
@@ -4300,16 +4187,13 @@ soap_ssl_init()
     gnutls_global_init();
 # endif
 #endif
-#ifdef WITH_WOLFSSL
-    wolfSSL_Init();
-#endif
   }
 }
 #endif
 
 /******************************************************************************/
 
-#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_WOLFSSL) || defined(WITH_SYSTEMSSL)
+#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS)
 SOAP_FMAC1
 void
 SOAP_FMAC2
@@ -4322,7 +4206,7 @@ soap_ssl_noinit()
 
 /******************************************************************************/
 
-#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_WOLFSSL)
+#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS)
 SOAP_FMAC1
 const char *
 SOAP_FMAC2
@@ -4377,10 +4261,6 @@ soap_ssl_error(struct soap *soap, int ret, int err)
   (void)err;
   return gnutls_strerror(ret);
 #endif
-#ifdef WITH_WOLFSSL
-  err = wolfSSL_get_error(soap->ssl, ret);
-  return wolfSSL_ERR_error_string(err, soap->msgbuf); /* msgbuf size is at least 80 bytes (>=1024) */
-#endif
 }
 #endif
 
@@ -4408,7 +4288,7 @@ ssl_send(int sk, void *s, int n, char *user)
 
 /******************************************************************************/
 
-#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_WOLFSSL) || defined(WITH_SYSTEMSSL)
+#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_SYSTEMSSL)
 static int
 ssl_auth_init(struct soap *soap)
 {
@@ -4427,7 +4307,7 @@ ssl_auth_init(struct soap *soap)
   if (!soap->ctx)
   {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-    /* TLS_method: a TLS/SSL connection established may understand the SSLv3, TLSv1, TLSv1.1, TLSv1.2 and TLSv1.3 protocols. */
+    /* TLS_method: a TLS/SSL connection established may understand the SSLv3, TLSv1, TLSv1.1 and TLSv1.2 protocols. */
     soap->ctx = SSL_CTX_new(TLS_method());
 #else
     /* SSLv23_method: a TLS/SSL connection established may understand the SSLv3, TLSv1, TLSv1.1 and TLSv1.2 protocols. */
@@ -4462,11 +4342,11 @@ ssl_auth_init(struct soap *soap)
     if (soap_ssl_crl(soap, soap->crlfile))
       return soap->error;
   }
-/* This code assumes a typical scenario with key and cert combined in one PEM file */
+/* This code assumes a typical scenario with key and cert in one PEM file, see alternative code below */
 #if 1
   if (soap->keyfile)
   {
-    if (SSL_CTX_use_certificate_chain_file(soap->ctx, soap->keyfile) != 1)
+    if (!SSL_CTX_use_certificate_chain_file(soap->ctx, soap->keyfile))
       return soap_set_receiver_error(soap, "SSL/TLS error", "Can't find or read certificate in private key PEM file", SOAP_SSL_ERROR);
     if (soap->password)
     {
@@ -4474,40 +4354,34 @@ ssl_auth_init(struct soap *soap)
       SSL_CTX_set_default_passwd_cb(soap->ctx, ssl_password);
     }
 #ifndef WM_SECURE_KEY_STORAGE
-    if (SSL_CTX_use_PrivateKey_file(soap->ctx, soap->keyfile, SSL_FILETYPE_PEM) != 1)
+    if (!SSL_CTX_use_PrivateKey_file(soap->ctx, soap->keyfile, SSL_FILETYPE_PEM))
       return soap_set_receiver_error(soap, "SSL/TLS error", "Can't read private key PEM file", SOAP_SSL_ERROR);
 #endif
   }
 #else
-/* Alternative approach to check the key file for cert only when cafile==NULL */
-#ifndef WM_SECURE_KEY_STORAGE
+/* Suggested alternative approach to check the key file for cert only when cafile==NULL */
   if (soap->password)
   {
     SSL_CTX_set_default_passwd_cb_userdata(soap->ctx, (void*)soap->password);
     SSL_CTX_set_default_passwd_cb(soap->ctx, ssl_password);
   }
-#endif
   if (!soap->cafile)
   {
     if (soap->keyfile)
     {
-      if (SSL_CTX_use_certificate_chain_file(soap->ctx, soap->keyfile) != 1)
+      if (!SSL_CTX_use_certificate_chain_file(soap->ctx, soap->keyfile))
         return soap_set_receiver_error(soap, "SSL/TLS error", "Can't find or read certificate in private key PEM file", SOAP_SSL_ERROR);
-#ifndef WM_SECURE_KEY_STORAGE
-      if (SSL_CTX_use_PrivateKey_file(soap->ctx, soap->keyfile, SSL_FILETYPE_PEM) != 1)
+      if (!SSL_CTX_use_PrivateKey_file(soap->ctx, soap->keyfile, SSL_FILETYPE_PEM))
         return soap_set_receiver_error(soap, "SSL/TLS error", "Can't read private key PEM file", SOAP_SSL_ERROR);
-#endif
     }
   }
-  else /* use cafile for the root CA and (server) cert, and keyfile for (server) key */
+  else /* use cafile for (server) cert and keyfile for (server) key */
   {
-    if (SSL_CTX_use_certificate_chain_file(soap->ctx, soap->cafile) != 1)
+    if (!SSL_CTX_use_certificate_chain_file(soap->ctx, soap->cafile))
       return soap_set_receiver_error(soap, "SSL/TLS error", "Can't read CA PEM file", SOAP_SSL_ERROR);
-#ifndef WM_SECURE_KEY_STORAGE
     if (soap->keyfile)
-      if (SSL_CTX_use_PrivateKey_file(soap->ctx, soap->keyfile, SSL_FILETYPE_PEM) != 1)
+      if (!SSL_CTX_use_PrivateKey_file(soap->ctx, soap->keyfile, SSL_FILETYPE_PEM))
         return soap_set_receiver_error(soap, "SSL/TLS error", "Can't read private key PEM file", SOAP_SSL_ERROR);
-#endif
   }
 #endif
 #if defined(VXWORKS) && defined(WM_SECURE_KEY_STORAGE)
@@ -4744,109 +4618,6 @@ ssl_auth_init(struct soap *soap)
 #endif
   }
 #endif
-#ifdef WITH_WOLFSSL
-  WOLFSSL_METHOD *method = NULL;
-  int verify = WOLFSSL_VERIFY_PEER;
-  if (soap->ssl_flags & SOAP_SSL_CLIENT)
-    verify = (soap->ssl_flags & SOAP_SSL_REQUIRE_SERVER_AUTHENTICATION) ? WOLFSSL_VERIFY_PEER : SSL_VERIFY_NONE;
-  else
-    verify = (soap->ssl_flags & SOAP_SSL_REQUIRE_CLIENT_AUTHENTICATION) ? SSL_VERIFY_PEER | WOLFSSL_VERIFY_FAIL_IF_NO_PEER_CERT : SSL_VERIFY_NONE;
-  /* enable all TSLv1 protocols and disable SSLv3 by default if no SSL/TLS flags are set */
-  if ((soap->ssl_flags & SOAP_SSLv3_TLSv1) == 0)
-    soap->ssl_flags |= SOAP_SSLv3_TLSv1;
-  if ((soap->ssl_flags & SOAP_SSL_CLIENT))
-  {
-    if ((soap->ssl_flags & SOAP_SSLv3_TLSv1) == SOAP_SSLv3_TLSv1)
-      method = wolfSSLv23_client_method(); /* select all available protocols */
-#ifdef WOLFSSL_TLS13
-    else if ((soap->ssl_flags & SOAP_TLSv1_3))
-      method = wolfTLSv1_3_client_method(); /* TLSv1.3 only or upgrade to TLSv1.3 */
-#endif
-#ifndef WOLFSSL_NO_TLS12
-    else if ((soap->ssl_flags & SOAP_TLSv1_2))
-      method = wolfTLSv1_2_client_method(); /* TLSv1.2 only or upgrade to TLSv1.2 */
-#endif
-#ifndef NO_OLD_TLS
-    else if ((soap->ssl_flags & SOAP_TLSv1_1))
-      method = wolfTLSv1_1_client_method(); /* TLSv1.1 only or upgrade to TLSv1.1 */
-#endif
-#ifdef WOLFSSL_ALLOW_TLSV10
-    else if ((soap->ssl_flags & SOAP_TLSv1_0))
-      method = wolfTLSv1_client_method(); /* TLSv1.0 only or upgrade to TLSv1.0 */
-#endif
-#ifdef WOLFSSL_ALLOW_SSLV3
-    else if ((soap->ssl_flags & SOAP_SSLv3))
-      method = wolfSSLv3_client_method(); /* SSLv3 only */
-#endif
-  }
-  else
-  {
-    if ((soap->ssl_flags & SOAP_SSLv3_TLSv1) == SOAP_SSLv3_TLSv1)
-      method = wolfSSLv23_server_method(); /* select all available protocols */
-#ifdef WOLFSSL_TLS13
-    else if ((soap->ssl_flags & SOAP_TLSv1_3))
-      method = wolfTLSv1_3_server_method(); /* TLSv1.3 only or upgrade to TLSv1.3 */
-#endif
-#ifndef WOLFSSL_NO_TLS12
-    else if ((soap->ssl_flags & SOAP_TLSv1_2))
-      method = wolfTLSv1_2_server_method(); /* TLSv1.2 only or upgrade to TLSv1.2 */
-#endif
-#ifndef NO_OLD_TLS
-    else if ((soap->ssl_flags & SOAP_TLSv1_1))
-      method = wolfTLSv1_1_server_method(); /* TLSv1.1 only or upgrade to TLSv1.1 */
-#endif
-#ifdef WOLFSSL_ALLOW_TLSV10
-    else if ((soap->ssl_flags & SOAP_TLSv1_0))
-      method = wolfTLSv1_server_method(); /* TLSv1.0 only or upgrade to TLSv1.0 */
-#endif
-#ifdef WOLFSSL_ALLOW_SSLV3
-    else if ((soap->ssl_flags & SOAP_SSLv3))
-      method = wolfSSLv3_server_method(); /* SSLv3 only */
-#endif
-  }
-  if (!method)
-    return soap_set_receiver_error(soap, "SSL/TLS error", "Can't setup method, the specified TLS protocol is unsupported", SOAP_SSL_ERROR);
-  if (soap->ctx)
-  {
-    wolfSSL_CTX_free(soap->ctx);
-    soap->ctx = NULL;
-  }
-  soap->ctx = wolfSSL_CTX_new(method);
-  if (!soap->ctx)
-    return soap_set_receiver_error(soap, "SSL/TLS error", "Can't setup context", SOAP_SSL_ERROR);
-  if (soap->cafile || soap->capath)
-  {
-    if (wolfSSL_CTX_load_verify_locations(soap->ctx, soap->cafile, soap->capath) != SSL_SUCCESS)
-      return soap_set_receiver_error(soap, "SSL/TLS error", "Can't read CA PEM file", SOAP_SSL_ERROR);
-  }
-  if (soap->keyfile)
-  {
-    if (wolfSSL_CTX_use_certificate_file(soap->ctx, soap->keyfile, SSL_FILETYPE_PEM) != SSL_SUCCESS)
-      return soap_set_receiver_error(soap, "SSL/TLS error", "Can't read server CA PEM file", SOAP_SSL_ERROR);
-#ifdef WOLFSSL_ENCRYPTED_KEYS
-    if (soap->password)
-    {
-      wolfSSL_CTX_set_default_passwd_cb_userdata(soap->ctx, (void*)soap->password);
-      wolfSSL_CTX_set_default_passwd_cb(soap->ctx, ssl_password);
-    }
-#else
-#warning "Encrypted private keys are not supported, define WOLFSSL_ENCRYPTED_KEYS in WolfSSL build settings to enable"
-#endif
-    if (wolfSSL_CTX_use_PrivateKey_file(soap->ctx, soap->keyfile, SSL_FILETYPE_PEM) != SSL_SUCCESS)
-      return soap_set_receiver_error(soap, "SSL/TLS error", "Can't read private key PEM file", SOAP_SSL_ERROR);
-#if defined(WOLFSSL_TLS13) && defined(WOLFSSL_POST_HANDSHAKE_AUTH)
-    /* post handshake authentication sets a flag in the ClientHello message, which is required for post-handshake authentication, only when we are connecting as a client */
-    if ((soap->ssl_flags & SOAP_TLSv1_3) && (soap->ssl_flags & SOAP_SSL_CLIENT) && wolfSSL_CTX_allow_post_handshake_auth(soap->ctx))
-      return soap_set_receiver_error(soap, "SSL/TLS error", "Can't enable post-handshake authentication", SOAP_SSL_ERROR);
-#endif
-  }
-  if (soap->crlfile)
-  {
-    if (soap_ssl_crl(soap, soap->crlfile))
-      return soap->error;
-  }
-  wolfSSL_CTX_set_verify(soap->ctx, verify, soap->fsslverify);
-#endif
 #ifdef WITH_SYSTEMSSL
   if (!soap->ctx)
   {
@@ -4901,7 +4672,7 @@ ssl_auth_init(struct soap *soap)
 
 /******************************************************************************/
 
-#if defined(WITH_OPENSSL) || defined(WITH_WOLFSSL)
+#ifdef WITH_OPENSSL
 static int
 ssl_password(char *buf, int num, int rwflag, void *userdata)
 {
@@ -4923,38 +4694,31 @@ ssl_verify_callback(int ok, X509_STORE_CTX *store)
 #ifdef SOAP_DEBUG
   if (!ok)
   {
+    char buf[1024];
     int err = X509_STORE_CTX_get_error(store);
     X509 *cert = X509_STORE_CTX_get_current_cert(store);
     fprintf(stderr, "\nDEBUG mode TLS/SSL warnings:\nSSL verify error %d or warning with certificate at depth %d: %s\n", err, X509_STORE_CTX_get_error_depth(store), X509_verify_cert_error_string(err));
-    if (cert)
+    X509_NAME_oneline(X509_get_issuer_name(cert), buf, sizeof(buf)-1);
+    fprintf(stderr, "  certificate issuer:  %s\n", buf);
+    X509_NAME_oneline(X509_get_subject_name(cert), buf, sizeof(buf)-1);
+    fprintf(stderr, "  certificate subject: %s\n", buf);
+    /* accept self-signed certificates and certificates out of date */
+    switch (err)
     {
-      char buf[1024];
-      X509_NAME_oneline(X509_get_issuer_name(cert), buf, sizeof(buf)-1);
-      fprintf(stderr, "  certificate issuer:  %s\n", buf);
-      X509_NAME_oneline(X509_get_subject_name(cert), buf, sizeof(buf)-1);
-      fprintf(stderr, "  certificate subject: %s\n", buf);
-      /* accept self-signed certificates and certificates out of date */
-      switch (err)
-      {
-        case X509_V_ERR_CERT_NOT_YET_VALID:
-        case X509_V_ERR_CERT_HAS_EXPIRED:
-        case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
-        case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
-        case X509_V_ERR_UNABLE_TO_GET_CRL:
-        case X509_V_ERR_CRL_NOT_YET_VALID:
-        case X509_V_ERR_CRL_HAS_EXPIRED:
-          X509_STORE_CTX_set_error(store, X509_V_OK);
-          ok = 1;
-          fprintf(stderr, "Initialize soap_ssl_client_context with SOAP_SSL_ALLOW_EXPIRED_CERTIFICATE to allow this verification error to pass without DEBUG mode enabled\n");
-      }
-    }
-    else
-    {
-      fprintf(stderr, "  no certificate in store\n");
+      case X509_V_ERR_CERT_NOT_YET_VALID:
+      case X509_V_ERR_CERT_HAS_EXPIRED:
+      case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
+      case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
+      case X509_V_ERR_UNABLE_TO_GET_CRL:
+      case X509_V_ERR_CRL_NOT_YET_VALID:
+      case X509_V_ERR_CRL_HAS_EXPIRED:
+        X509_STORE_CTX_set_error(store, X509_V_OK);
+        ok = 1;
+        fprintf(stderr, "Initialize soap_ssl_client_context with SOAP_SSL_ALLOW_EXPIRED_CERTIFICATE to allow this verification error to pass without DEBUG mode enabled\n");
     }
   }
 #endif
-  /* Note: return 1 to continue, whether it is safe or not to do so is up to you to verify, or 0 to cancel the handshake */
+  /* Note: return 1 to try to continue, but unsafe progress will be terminated by OpenSSL */
   return ok;
 }
 #endif
@@ -5032,65 +4796,7 @@ ssl_verify(struct soap *soap, const char *host)
 
 /******************************************************************************/
 
-#ifdef WITH_WOLFSSL
-static int
-ssl_verify_callback(int ok, WOLFSSL_X509_STORE_CTX *store)
-{
-  (void)store;
-#ifdef SOAP_DEBUG
-  if (!ok)
-  {
-    int err = store->error;
-#if defined(OPENSSL_EXTRA) || defined(OPENSSL_EXTRA_X509_SMALL)
-    WOLFSSL_X509 *cert = store->current_cert;
-    fprintf(stderr, "\nDEBUG mode TLS/SSL warnings:\nSSL verify error %d or warning with certificate at depth %d: %s\n", err, store->error_depth, wolfSSL_X509_verify_cert_error_string(err));
-    if (cert)
-    {
-      char buf[1024];
-      wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_issuer_name(cert), buf, sizeof(buf)-1);
-      fprintf(stderr, "  certificate issuer:  %s\n", buf);
-      wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_subject_name(cert), buf, sizeof(buf)-1);
-      fprintf(stderr, "  certificate subject: %s\n", buf);
-    }
-    else
-    {
-      fprintf(stderr, "  no certificate in store\n");
-    }
-#else
-    fprintf(stderr, "\nDEBUG mode TLS/SSL warnings:\nSSL verify error %d or warning with certificate at depth %d\n", err, store->error_depth);
-#endif
-  }
-#endif
-  /* Note: return 1 to continue, whether it is safe or not to do so is up to you to verify, or 0 to cancel the handshake */
-  return ok;
-}
-#endif
-
-/******************************************************************************/
-
-#ifdef WITH_WOLFSSL
-static int
-ssl_verify_callback_allow_expired_certificate(int ok, WOLFSSL_X509_STORE_CTX *store)
-{
-  ok = ssl_verify_callback(ok, store);
-  if (!ok)
-  {
-    /* accept expired certificates */
-    switch (store->error)
-    {
-      case ASN_BEFORE_DATE_E:
-      case ASN_AFTER_DATE_E:
-        ok = 1;
-    }
-  }
-  /* Note: return 1 to continue, whether it is safe or not to do so is up to you to verify, or 0 to cancel the handshake */
-  return ok;
-}
-#endif
-
-/******************************************************************************/
-
-#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_WOLFSSL) || defined(WITH_SYSTEMSSL)
+#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS)
 #ifndef WITH_NOIO
 SOAP_FMAC1
 int
@@ -5237,63 +4943,6 @@ soap_ssl_accept(struct soap *soap)
       (void)soap_closesock(soap);
       return soap_set_receiver_error(soap, "SSL/TLS error", err, SOAP_SSL_ERROR);
     }
-  }
-#endif
-#ifdef WITH_WOLFSSL
-  int err = SSL_ERROR_NONE;
-  int retries, r, s;
-  if (!soap_valid_socket(sk))
-    return soap_set_receiver_error(soap, "SSL/TLS error", "No socket in soap_ssl_accept()", SOAP_SSL_ERROR);
-  if (!soap->ssl)
-  {
-    soap->ssl = wolfSSL_new(soap->ctx);
-    if (!soap->ssl)
-    {
-      (void)soap_closesock(soap);
-      return soap_set_receiver_error(soap, "SSL/TLS error", "wolfSSL_new() failed in soap_ssl_accept()", SOAP_SSL_ERROR);
-    }
-  }
-  soap->ssl_flags &= ~SOAP_SSL_CLIENT;
-  /* default timeout: 10 sec retries, 100 times 0.1 sec */
-  retries = 100;
-  if (soap->recv_timeout || soap->send_timeout)
-  {
-    int t = soap->recv_timeout > soap->send_timeout ? soap->recv_timeout : soap->send_timeout;
-    if (t > 0)
-      retries = 10 * t;
-    else if (t > -100000)
-      retries = 1;
-    else
-      retries = t/-100000;
-  }
-  wolfSSL_set_fd(soap->ssl, sk);
-  SOAP_SOCKNONBLOCK(sk)
-  while ((r = wolfSSL_accept(soap->ssl)) != SSL_SUCCESS)
-  {
-    err = wolfSSL_get_error(soap->ssl, r);
-    if (err == SSL_ERROR_WANT_ACCEPT || err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
-    {
-      if (err == SSL_ERROR_WANT_READ)
-        s = tcp_select(soap, sk, SOAP_TCP_SELECT_RCV | SOAP_TCP_SELECT_ERR, -100000);
-      else
-        s = tcp_select(soap, sk, SOAP_TCP_SELECT_SND | SOAP_TCP_SELECT_ERR, -100000);
-      if (s < 0)
-        break;
-    }
-    else
-    {
-      soap->errnum = soap_socket_errno;
-      break;
-    }
-    if (retries-- <= 0)
-      break;
-  }
-  if (!soap->recv_timeout && !soap->send_timeout)
-    SOAP_SOCKBLOCK(sk)
-  if (r != SSL_SUCCESS)
-  {
-    (void)soap_set_receiver_error(soap, soap_ssl_error(soap, r, 0), "SSL/TLS handshake failed", SOAP_SSL_ERROR);
-    return soap_closesock(soap);
   }
 #endif
 #ifdef WITH_SYSTEMSSL
@@ -5463,7 +5112,7 @@ tcp_gethostbyname(struct soap *soap, const char *addr, struct hostent *hostent, 
     hostent = NULL;
     soap->errnum = h_errno;
   }
-#elif (!defined(_GNU_SOURCE) || (!(~_GNU_SOURCE+1) && !defined(_POSIX_C_SOURCE) && !defined(_XOPEN_SOURCE)) || _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600 || defined(__ANDROID__) || defined(FREEBSD) || defined(__FreeBSD__)) && !defined(SUN_OS) && defined(HAVE_GETHOSTBYNAME_R)
+#elif (!defined(_GNU_SOURCE) || (!(~_GNU_SOURCE+1) && !defined(_POSIX_C_SOURCE) && !defined(_XOPEN_SOURCE)) || _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600 || defined(__ANDROID__) || defined(FREEBSD) || defined(__FreeBSD__)) && defined(HAVE_GETHOSTBYNAME_R)
   while ((r = gethostbyname_r(addr, hostent, tmpbuf, tmplen, &hostent, &soap->errnum)) < 0)
   {
     if (tmpbuf != soap->tmpbuf)
@@ -5492,23 +5141,13 @@ tcp_gethostbyname(struct soap *soap, const char *addr, struct hostent *hostent, 
     soap->errnum = soap_errno;
   }
 #else
-  {
-    struct hostent *temp;
 #ifdef AS400
-    temp = gethostbyname((void*)addr);
+  hostent = gethostbyname((void*)addr);
 #else
-    temp = gethostbyname((char*)addr);
+  hostent = gethostbyname((char*)addr);
 #endif
-    if (!temp)
-    {
-      soap->errnum = h_errno;
-      hostent = NULL;
-    }
-    else
-    {
-      *hostent = *temp;
-    }
-  }
+  if (!hostent)
+    soap->errnum = h_errno;
 #endif
   if (!hostent)
   {
@@ -5568,7 +5207,7 @@ tcp_connect(struct soap *soap, const char *endpoint, const char *host, int port)
 #ifndef WITH_LEAN
   int set = 1;
 #endif
-#if !defined(WITH_LEAN) || defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_WOLFSSL) || defined(WITH_SYSTEMSSL)
+#if !defined(WITH_LEAN) || defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_SYSTEMSSL)
   int retries;
 #endif
   soap->errnum = 0;
@@ -5587,7 +5226,6 @@ tcp_connect(struct soap *soap, const char *endpoint, const char *host, int port)
         return soap->socket = SOAP_INVALID_SOCKET;
       }
       soap->peer.in.sin_port = htons((short)port);
-      soap->peer.in.sin_family = AF_INET;
       soap->errmode = 0;
 #else
       memset((void*)&hints, 0, sizeof(hints));
@@ -6171,7 +5809,7 @@ again:
   soap->omode &= ~SOAP_ENC_SSL;
   if (endpoint && !soap_tag_cmp(endpoint, "https:*"))
   {
-#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_WOLFSSL) || defined(WITH_SYSTEMSSL)
+#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_SYSTEMSSL)
 #ifdef WITH_OPENSSL
     BIO *bio;
 #endif
@@ -6604,106 +6242,6 @@ again:
       }
     }
 #endif
-#ifdef WITH_WOLFSSL
-    soap->ssl_flags |= SOAP_SSL_CLIENT;
-    if (!soap->session && (soap->error = soap->fsslauth(soap)) != SOAP_OK)
-    {
-      (void)soap->fclosesocket(soap, sk);
-      return soap->socket = SOAP_INVALID_SOCKET;
-    }
-    if (!soap->ssl)
-    {
-      soap->ssl = wolfSSL_new(soap->ctx);
-      if (!soap->ssl)
-      {
-        (void)soap->fclosesocket(soap, sk);
-        soap->error = SOAP_SSL_ERROR;
-        return soap->socket = SOAP_INVALID_SOCKET;
-      }
-#ifdef HAVE_SECURE_RENEGOTIATION
-#warning "Client-side secure renegotiation not recommended, undefine HAVE_SECURE_RENEGOTIATION to disable"
-      if (wolfSSL_UseSecureRenegotiation(soap->ssl) != SSL_SUCCESS)
-      {
-        (void)soap->fclosesocket(soap, sk);
-        (void)soap_set_receiver_error(soap, "SSL/TLS error", "failed to enable secure renegotiation in soap_ssl_accept()", SOAP_SSL_ERROR);
-        wolfSSL_free(soap->ssl);
-        soap->ssl = NULL;
-        return soap->socket = SOAP_INVALID_SOCKET;
-      }
-#endif
-      /* Set the expected domain name so that the peer server's can be verified when we connect. */
-      if (!(soap->ssl_flags & SOAP_SSL_SKIP_HOST_CHECK))
-      {
-        if (wolfSSL_check_domain_name(soap->ssl, host) != SSL_SUCCESS)
-        {
-          (void)soap->fclosesocket(soap, sk);
-          (void)soap_set_receiver_error(soap, "SSL/TLS error", "wolfSSL_check_domain_name() failed in tcp_connect()", SOAP_TCP_ERROR);
-          wolfSSL_free(soap->ssl);
-          soap->ssl = NULL;
-          return soap->socket = SOAP_INVALID_SOCKET;
-        }
-      }
-    }
-    wolfSSL_set_fd(soap->ssl, sk);
-    if (soap->connect_timeout || soap->recv_timeout || soap->send_timeout)
-    {
-      /* Set SSL connect timeout and set SSL sockets to non-blocking */
-      int t = soap->recv_timeout > soap->send_timeout ? soap->recv_timeout : soap->send_timeout;
-      if (soap->connect_timeout > 0 && t < soap->connect_timeout)
-        t = soap->connect_timeout;
-      if (t > 0)
-        retries = 10 * t;
-      else if (t > -100000)
-        retries = 1;
-      else
-        retries = t/-100000;
-      SOAP_SOCKNONBLOCK(sk)
-    }
-    else
-    {
-      /* Set sockets to blocking */
-      retries = 1;
-      SOAP_SOCKBLOCK(sk)
-    }
-    err = SSL_ERROR_NONE;
-    /* Try connecting until success or timeout */
-    do
-    {
-      if ((r = wolfSSL_connect(soap->ssl)) <= 0)
-      {
-        err = wolfSSL_get_error(soap->ssl, r);
-        if (err == SSL_ERROR_WANT_CONNECT || err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
-        {
-          int s;
-          if (err == SSL_ERROR_WANT_READ)
-            s = tcp_select(soap, sk, SOAP_TCP_SELECT_RCV | SOAP_TCP_SELECT_ERR, -100000);
-          else
-            s = tcp_select(soap, sk, SOAP_TCP_SELECT_SND | SOAP_TCP_SELECT_ERR, -100000);
-          if (s < 0)
-            break;
-          if (s == 0 && retries-- <= 0)
-          {
-            DBGLOG(TEST, SOAP_MESSAGE(fdebug, "SSL/TLS connect timeout\n"));
-            (void)soap_set_receiver_error(soap, "Timeout", "wolfSSL_connect() failed in tcp_connect()", SOAP_TCP_ERROR);
-            (void)soap->fclosesocket(soap, sk);
-            return soap->socket = SOAP_INVALID_SOCKET;
-          }
-        }
-        else
-        {
-          soap->errnum = soap_socket_errno;
-          break;
-        }
-      }
-    } while (!wolfSSL_is_init_finished(soap->ssl));
-    if (r != SSL_SUCCESS)
-    {
-      DBGLOG(TEST, SOAP_MESSAGE(fdebug, "SSL_connect/select error in tcp_connect\n"));
-      (void)soap_set_receiver_error(soap, soap_ssl_error(soap, r, 0), "SSL/TLS handshake failed", SOAP_SSL_ERROR);
-      (void)soap->fclosesocket(soap, sk);
-      return soap->socket = SOAP_INVALID_SOCKET;
-    }
-#endif
 #ifdef WITH_SYSTEMSSL
     soap->ssl_flags |= SOAP_SSL_CLIENT;
     if (!soap->ctx && (soap->error = soap->fsslauth(soap)) != SOAP_OK)
@@ -7124,13 +6662,6 @@ tcp_disconnect(struct soap *soap)
     gnutls_bye(soap->session, GNUTLS_SHUT_RDWR);
     gnutls_deinit(soap->session);
     soap->session = NULL;
-  }
-#endif
-#ifdef WITH_WOLFSSL
-  if (soap->ssl)
-  {
-    wolfSSL_free(soap->ssl);
-    soap->ssl = NULL;
   }
 #endif
 #ifdef WITH_SYSTEMSSL
@@ -7836,7 +7367,6 @@ soap_done(struct soap *soap)
 #endif
   soap->fseterror = NULL;
   soap->fignore = NULL;
-  soap->fencoding = NULL;
   soap->fserveloop = NULL;
 #ifdef WITH_OPENSSL
   if (soap->session)
@@ -7911,21 +7441,6 @@ soap_done(struct soap *soap)
   {
     gnutls_deinit(soap->session);
     soap->session = NULL;
-  }
-#endif
-#ifdef WITH_WOLFSSL
-  if (soap->ssl)
-  {
-    wolfSSL_free(soap->ssl);
-    soap->ssl = NULL;
-  }
-  if (soap->state == SOAP_INIT)
-  {
-    if (soap->ctx)
-    {
-      wolfSSL_CTX_free(soap->ctx);
-      soap->ctx = NULL;
-    }
   }
 #endif
 #ifdef WITH_SYSTEMSSL
@@ -8044,13 +7559,17 @@ http_parse(struct soap *soap)
       {
         char *t;
         *s = '\0';
-        while (*++s && *s <= 32)
-          continue;
+        do
+        {
+          s++;
+        } while (*s && *s <= 32);
+        if (*s == '"')
+          s++;
         t = s + strlen(s) - 1;
         while (t > s && *t <= 32)
           t--;
-        if (t > s && *s == '"' && *t == '"')
-          s++,t--;
+        if (t >= s && *t == '"')
+          t--;
         t[1] = '\0';
         soap->error = soap->fparsehdr(soap, header, s);
         if (soap->error)
@@ -8147,7 +7666,7 @@ http_parse_header(struct soap *soap, const char *key, const char *val)
 {
   if (!soap_tag_cmp(key, "Host"))
   {
-#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_WOLFSSL)
+#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS)
     if ((soap->imode & SOAP_ENC_SSL))
       soap_strcpy(soap->endpoint, sizeof(soap->endpoint), "https://");
     else
@@ -8551,7 +8070,7 @@ http_post(struct soap *soap, const char *endpoint, const char *host, int port, c
   err = soap->fposthdr(soap, soap->tmpbuf, NULL);
   if (err)
     return err;
-#if defined(WITH_OPENSSL) || defined(WITH_WOLFSSL)
+#ifdef WITH_OPENSSL
   if ((soap->ssl && port != 443) || (!soap->ssl && port != 80))
 #else
   if (port != 80)
@@ -8621,7 +8140,7 @@ http_post(struct soap *soap, const char *endpoint, const char *host, int port, c
   if (soap->bearer)
   {
     l = strlen(soap->bearer);
-    (SOAP_SNPRINTF(soap->tmpbuf, sizeof(soap->tmpbuf), l + 7), "Bearer %s", soap->bearer);
+    (SOAP_SNPRINTF(soap->tmpbuf, sizeof(soap->tmpbuf), l + 1), "Bearer %s", soap->bearer);
     err = soap->fposthdr(soap, "Authorization", soap->tmpbuf);
     if (err)
       return err;
@@ -8673,7 +8192,7 @@ http_post(struct soap *soap, const char *endpoint, const char *host, int port, c
 #endif
 #endif
 #ifdef WITH_COOKIES
-#if defined(WITH_OPENSSL) || defined(WITH_WOLFSSL)
+#ifdef WITH_OPENSSL
   if (soap_putcookies(soap, host, path, soap->ssl != NULL))
     return soap->error;
 #else
@@ -9375,7 +8894,7 @@ soap_putsetcookies(struct soap *soap)
   for (p = soap->cookies; p; p = p->next)
   {
     if ((p->modified
-#if defined(WITH_OPENSSL) || defined(WITH_WOLFSSL)
+#ifdef WITH_OPENSSL
      || (!p->env && !soap->ssl == !p->secure)
 #endif
      ) && p->name && p->value && *p->name && *p->value)
@@ -9442,7 +8961,7 @@ soap_putsetcookies(struct soap *soap)
 #endif
       if (s-tmp < 4079
        && (p->secure
-#if defined(WITH_OPENSSL) || defined(WITH_WOLFSSL)
+#ifdef WITH_OPENSSL
        || soap->ssl
 #endif
          ))
@@ -10880,8 +10399,7 @@ soap_malloc(struct soap *soap, size_t n)
   size_t k = n;
   if (SOAP_MAXALLOCSIZE > 0 && n > SOAP_MAXALLOCSIZE)
   {
-    if (soap)
-      soap->error = SOAP_EOM;
+    soap->error = SOAP_EOM;
     return NULL;
   }
   if (!soap)
@@ -11843,7 +11361,7 @@ soap_end_send_flush(struct soap *soap)
 #endif
   }
 #ifdef WITH_TCPFIN
-#if defined(WITH_OPENSSL) || defined(WITH_WOLFSSL) || defined(WITH_SYSTEMSSL)
+#if defined(WITH_OPENSSL) || defined(WITH_SYSTEMSSL)
   if (!soap->ssl)
 #endif
     if (soap_valid_socket(soap->socket) && !soap->keep_alive && !(soap->omode & SOAP_IO_UDP))
@@ -12241,9 +11759,6 @@ soap_copy_context(struct soap *copy, const struct soap *soap)
     copy->session_host[0] = '\0';
     copy->session_port = 443;
 #endif
-#ifdef WITH_WOLFSSL
-    copy->ssl = NULL;
-#endif
 #ifdef WITH_GNUTLS
     copy->session = NULL;
 #endif
@@ -12364,19 +11879,15 @@ soap_copy_stream(struct soap *copy, struct soap *soap)
 #endif
 #ifdef WITH_OPENSSL
   copy->bio = soap->bio;
-  copy->ssl = soap->ssl;
   copy->ctx = soap->ctx;
+  copy->ssl = soap->ssl;
 #endif
 #ifdef WITH_GNUTLS
   copy->session = soap->session;
 #endif
-#ifdef WITH_WOLFSSL
-  copy->ssl = soap->ssl;
-  copy->ctx = soap->ctx;
-#endif
 #ifdef WITH_SYSTEMSSL
-  copy->ssl = soap->ssl;
   copy->ctx = soap->ctx;
+  copy->ssl = soap->ssl;
 #endif
 #ifdef WITH_ZLIB
   copy->zlib_state = soap->zlib_state;
@@ -12492,8 +12003,8 @@ soap_free_stream(struct soap *soap)
   soap->recvsk = SOAP_INVALID_SOCKET;
 #ifdef WITH_OPENSSL
   soap->bio = NULL;
-  soap->ssl = NULL;
   soap->ctx = NULL;
+  soap->ssl = NULL;
 #endif
 #ifdef WITH_GNUTLS
   soap->xcred = NULL;
@@ -12503,13 +12014,9 @@ soap_free_stream(struct soap *soap)
   soap->dh_params = NULL;
   soap->rsa_params = NULL;
 #endif
-#ifdef WITH_WOLFSSL
-  soap->ssl = NULL;
-  soap->ctx = NULL;
-#endif
 #ifdef WITH_SYSTEMSSL
-  soap->ssl = (gsk_handle)NULL;
   soap->ctx = (gsk_handle)NULL;
+  soap->ssl = (gsk_handle)NULL;
 #endif
 #ifdef WITH_ZLIB
   if (soap->z_buf)
@@ -12617,7 +12124,6 @@ soap_versioning(soap_init)(struct soap *soap, soap_mode imode, soap_mode omode)
 #endif
   soap->fseterror = NULL;
   soap->fignore = NULL;
-  soap->fencoding = NULL;
   soap->fserveloop = NULL;
   soap->fplugin = fplugin;
 #ifndef WITH_LEANER
@@ -12802,8 +12308,6 @@ soap_versioning(soap_init)(struct soap *soap, soap_mode imode, soap_mode omode)
   soap->ssl = NULL;
   soap->ctx = NULL;
   soap->session = NULL;
-  soap->dhfile = NULL;
-  soap->randfile = NULL;
   soap->session_host[0] = '\0';
   soap->session_port = 443;
   soap->ssl_flags = SOAP_SSL_DEFAULT;
@@ -12813,6 +12317,8 @@ soap_versioning(soap_init)(struct soap *soap, soap_mode imode, soap_mode omode)
   soap->cafile = NULL;
   soap->capath = NULL;
   soap->crlfile = NULL;
+  soap->dhfile = NULL;
+  soap->randfile = NULL;
 #endif
 #ifdef WITH_GNUTLS
   if (!soap_ssl_init_done)
@@ -12823,33 +12329,15 @@ soap_versioning(soap_init)(struct soap *soap, soap_mode imode, soap_mode omode)
   soap->acred = NULL;
   soap->cache = NULL;
   soap->session = NULL;
+  soap->ssl_flags = SOAP_SSL_DEFAULT;
+  soap->keyfile = NULL;
+  soap->keyid = NULL;
+  soap->password = NULL;
+  soap->cafile = NULL;
+  soap->capath = NULL;
+  soap->crlfile = NULL;
   soap->dh_params = NULL;
   soap->rsa_params = NULL;
-  soap->ssl_flags = SOAP_SSL_DEFAULT;
-  soap->keyfile = NULL;
-  soap->keyid = NULL;
-  soap->password = NULL;
-  soap->cafile = NULL;
-  soap->capath = NULL;
-  soap->crlfile = NULL;
-#endif
-#ifdef WITH_WOLFSSL
-  if (!soap_ssl_init_done)
-    soap_ssl_init();
-  soap->fsslauth = ssl_auth_init;
-  soap->fsslverify = NULL;
-  soap->ssl = NULL;
-  soap->ctx = NULL;
-  soap->session = NULL;
-  soap->dhfile = NULL;
-  soap->randfile = NULL;
-  soap->ssl_flags = SOAP_SSL_DEFAULT;
-  soap->keyfile = NULL;
-  soap->keyid = NULL;
-  soap->password = NULL;
-  soap->cafile = NULL;
-  soap->capath = NULL;
-  soap->crlfile = NULL;
 #endif
 #ifdef WITH_SYSTEMSSL
   soap->fsslauth = ssl_auth_init;
@@ -13270,6 +12758,7 @@ soap_element(struct soap *soap, const char *tag, int id, const char *type)
   const char *s;
 #endif
   DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Element begin tag='%s' level='%u' id='%d' type='%s'\n", tag, soap->level, id, type ? type : SOAP_STR_EOS));
+#ifdef WITH_DOM
 #ifndef WITH_LEAN
   if (soap_tagsearch(soap->wsuid, tag))
   {
@@ -13281,9 +12770,11 @@ soap_element(struct soap *soap, const char *tag, int id, const char *type)
       return soap->error;
   }
 #endif
+#endif
   soap->level++;
   if (soap->level > soap->maxlevel)
     return soap->error = SOAP_LEVEL;
+#ifdef WITH_DOM
 #ifndef WITH_LEAN
   if ((soap->mode & SOAP_XML_CANONICAL) && !(soap->mode & SOAP_DOM_ASIS))
   {
@@ -13301,14 +12792,12 @@ soap_element(struct soap *soap, const char *tag, int id, const char *type)
           struct soap_nlist *np1 = soap_push_ns(soap, np->id, np->ns, 1, 0);
           if (np1 && !p)
             np1->index = 0;
-          DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Reset binding %s='%s' utilized=%d to utilized=%d\n", np->id, np->ns ? np->ns : SOAP_STR_EOS, np->index, np1 ? np1->index : np->index));
         }
       }
       soap->evlev = soap->level;
     }
   }
 #endif
-#ifdef WITH_DOM
   if ((soap->mode & SOAP_XML_DOM))
   {
     struct soap_dom_element *elt = (struct soap_dom_element*)soap_malloc(soap, sizeof(struct soap_dom_element));
@@ -13917,7 +13406,7 @@ soap_element_start_end_out(struct soap *soap, const char *tag)
       }
       else
       {
-        DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Binding (level=%u) %s='%s' utilized=%d\n", np->level, np->id, np->ns ? np->ns : SOAP_STR_EOS, np->index));
+        DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Binding (level=%u) %s='%s' utilized=%d\n", np->level, np->id, np->ns, np->index));
       }
     }
   }
@@ -15195,13 +14684,8 @@ soap_peek_element(struct soap *soap)
       } while (soap_coblank(c));
       if (c != SOAP_QT && c != SOAP_AP)
       {
-        if ((soap->mode & SOAP_XML_STRICT))
-        {
-          DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Unquoted attribute value in %s\n", soap->tag));
-          return soap->error = SOAP_SYNTAX_ERROR;
-        }
         soap_unget(soap, c);
-        c = ' '; /* allow blank delimiter for non-well formed XML like HTML */
+        c = ' '; /* blank delimiter */
       }
       k = tp->size;
       if (soap_getattrval(soap, tp->value, &k, c))
@@ -15303,11 +14787,6 @@ soap_peek_element(struct soap *soap)
     }
     else
     {
-      if ((soap->mode & SOAP_XML_STRICT))
-      {
-        DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Attribute withput a value in %s\n", soap->tag));
-        return soap->error = SOAP_SYNTAX_ERROR;
-      }
       tp->visible = 1; /* seen this attribute w/o value */
     }
 #ifdef WITH_DOM
@@ -17671,7 +17150,6 @@ soap_s2unsignedInt(struct soap *soap, const char *s, unsigned int *p)
 {
   if (s)
   {
-    unsigned long n;
     char *r;
     if (!*s)
       return soap->error = SOAP_EMPTY;
@@ -17680,11 +17158,8 @@ soap_s2unsignedInt(struct soap *soap, const char *s, unsigned int *p)
     soap_reset_errno;
 #endif
 #endif
-    n = soap_strtoul(s, &r, 10);
+    *p = (unsigned int)soap_strtoul(s, &r, 10);
     if (s == r || *r
-#ifndef WITH_LEAN
-        || n != (unsigned int)n
-#endif
 #ifndef WITH_NOIO
 #ifndef WITH_LEAN
         || soap_errno == SOAP_ERANGE
@@ -17693,10 +17168,9 @@ soap_s2unsignedInt(struct soap *soap, const char *s, unsigned int *p)
     )
       soap->error = SOAP_TYPE;
 #ifdef HAVE_STRTOUL
-    if (n > 0 && strchr(s, '-'))
+    if (*p > 0 && strchr(s, '-'))
       return soap->error = SOAP_TYPE;
 #endif
-    *p = (unsigned int)n;
   }
   return soap->error;
 }
@@ -21774,7 +21248,7 @@ soap_set_endpoint(struct soap *soap, const char *endpoint)
   soap->port = 80;
   if (!endpoint || !*endpoint)
     return;
-#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_WOLFSSL) || defined(WITH_SYSTEMSSL)
+#ifdef WITH_OPENSSL
   if (!soap_tag_cmp(endpoint, "https:*"))
     soap->port = 443;
 #endif
@@ -22263,10 +21737,10 @@ soap_base642s(struct soap *soap, const char *s, char *t, size_t l, int *n)
   soap_wchar c;
   unsigned long m;
   const char *p;
-  if (n)
-    *n = 0;
   if (!s || !*s)
   {
+    if (n)
+      *n = 0;
     if (soap->error)
       return NULL;
     return SOAP_NON_NULL;
@@ -22279,6 +21753,8 @@ soap_base642s(struct soap *soap, const char *s, char *t, size_t l, int *n)
   if (!t)
     return NULL;
   p = t;
+  if (n)
+    *n = 0;
   for (i = 0; ; i += 3, l -= 3)
   {
     m = 0;
@@ -22378,10 +21854,10 @@ SOAP_FMAC2
 soap_hex2s(struct soap *soap, const char *s, char *t, size_t l, int *n)
 {
   const char *p;
-  if (n)
-    *n = 0;
   if (!s || !*s)
   {
+    if (n)
+      *n = 0;
     if (soap->error)
       return NULL;
     return SOAP_NON_NULL;
@@ -22733,7 +22209,7 @@ soap_set_fault(struct soap *soap)
       *s = "An HTTP NTLM authentication error occurred";
       break;
     case SOAP_SSL_ERROR:
-#if defined(WITH_OPENSSL) || defined(WITH_GNUTLS) || defined(WITH_WOLFSSL) || defined(WITH_SYSTEMSSL)
+#ifdef WITH_OPENSSL
       *s = "SSL/TLS error";
 #else
       *s = "OpenSSL not installed: recompile with -DWITH_OPENSSL";
@@ -23505,7 +22981,6 @@ soap_register_plugin_arg(struct soap *soap, int (*fcreate)(struct soap*, struct 
       return SOAP_OK;
     }
     DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Could not register plugin '%s': plugin with the same ID already registered\n", p->id));
-    p->fdelete(soap, p);
     SOAP_FREE(soap, p);
     return SOAP_OK;
   }

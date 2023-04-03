@@ -180,7 +180,8 @@ test -x / || exit 1"
   as_suggested="  as_lineno_1=";as_suggested=$as_suggested$LINENO;as_suggested=$as_suggested" as_lineno_1a=\$LINENO
   as_lineno_2=";as_suggested=$as_suggested$LINENO;as_suggested=$as_suggested" as_lineno_2a=\$LINENO
   eval 'test \"x\$as_lineno_1'\$as_run'\" != \"x\$as_lineno_2'\$as_run'\" &&
-  test \"x\`expr \$as_lineno_1'\$as_run' + 1\`\" = \"x\$as_lineno_2'\$as_run'\"' || exit 1"
+  test \"x\`expr \$as_lineno_1'\$as_run' + 1\`\" = \"x\$as_lineno_2'\$as_run'\"' || exit 1
+test \$(( 1 + 1 )) = 2 || exit 1"
   if (eval "$as_required") 2>/dev/null
 then :
   as_have_required=yes
@@ -675,6 +676,8 @@ SOAPCPP2_DEBUG
 DEBUG_COMPILE_FALSE
 DEBUG_COMPILE_TRUE
 LIBOBJS
+EGREP
+GREP
 platform
 SAMPLE_EXTRA_LIBS
 AR
@@ -720,9 +723,6 @@ AM_BACKSLASH
 AM_DEFAULT_VERBOSITY
 AM_DEFAULT_V
 AM_V
-CSCOPE
-ETAGS
-CTAGS
 am__untar
 am__tar
 AMTAR
@@ -801,7 +801,6 @@ with_zlib
 with_openssl
 enable_ssl
 enable_gnutls
-enable_wolfssl
 enable_samples
 '
       ac_precious_vars='build_alias
@@ -1457,10 +1456,9 @@ Optional Features:
   --disable-c-locale      compile library without c locale usage
   --enable-ipv6           compile library with IPv6 support
   --enable-ipv6-v6only    compile library with IPv6-v6only support
-  --disable-ssl           build without TLS/SSL -- note: the wsse and wst
+  --disable-ssl           build without SSL/TLS -- note: the wsse and wst
                           examples will fail to build
-  --enable-gnutls         build with GNUTLS TLS/SSL
-  --enable-wolfssl        build with WolfSSL TLS/SSL
+  --enable-gnutls         build with GNUTLS SSL/TLS
   --enable-samples	  enable compile for the gsoap samples
 
 Optional Packages:
@@ -3542,20 +3540,6 @@ am__tar='$${TAR-tar} chof - "$$tardir"' am__untar='$${TAR-tar} xf -'
 
 
 
-# Variables for tags utilities; see am/tags.am
-if test -z "$CTAGS"; then
-  CTAGS=ctags
-fi
-
-if test -z "$ETAGS"; then
-  ETAGS=etags
-fi
-
-if test -z "$CSCOPE"; then
-  CSCOPE=cscope
-fi
-
-
 
 # POSIX will say in a future version that running "rm -f" with no argument
 # is OK; and we want to be able to make that assumption in our Makefile
@@ -3676,6 +3660,7 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 
+# AC_CONFIG_HEADERS([config.h])
 ac_config_headers="$ac_config_headers config.h"
 
 
@@ -6298,6 +6283,152 @@ then :
 printf "%s\n" "#define STDC_HEADERS 1" >>confdefs.h
 
 fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for grep that handles long lines and -e" >&5
+printf %s "checking for grep that handles long lines and -e... " >&6; }
+if test ${ac_cv_path_GREP+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  if test -z "$GREP"; then
+  ac_path_GREP_found=false
+  # Loop through the user's path and test for each of PROGNAME-LIST
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH$PATH_SEPARATOR/usr/xpg4/bin
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_prog in grep ggrep
+   do
+    for ac_exec_ext in '' $ac_executable_extensions; do
+      ac_path_GREP="$as_dir$ac_prog$ac_exec_ext"
+      as_fn_executable_p "$ac_path_GREP" || continue
+# Check for GNU ac_path_GREP and select it if it is found.
+  # Check for GNU $ac_path_GREP
+case `"$ac_path_GREP" --version 2>&1` in
+*GNU*)
+  ac_cv_path_GREP="$ac_path_GREP" ac_path_GREP_found=:;;
+*)
+  ac_count=0
+  printf %s 0123456789 >"conftest.in"
+  while :
+  do
+    cat "conftest.in" "conftest.in" >"conftest.tmp"
+    mv "conftest.tmp" "conftest.in"
+    cp "conftest.in" "conftest.nl"
+    printf "%s\n" 'GREP' >> "conftest.nl"
+    "$ac_path_GREP" -e 'GREP$' -e '-(cannot match)-' < "conftest.nl" >"conftest.out" 2>/dev/null || break
+    diff "conftest.out" "conftest.nl" >/dev/null 2>&1 || break
+    as_fn_arith $ac_count + 1 && ac_count=$as_val
+    if test $ac_count -gt ${ac_path_GREP_max-0}; then
+      # Best one so far, save it but keep looking for a better one
+      ac_cv_path_GREP="$ac_path_GREP"
+      ac_path_GREP_max=$ac_count
+    fi
+    # 10*(2^10) chars as input seems more than enough
+    test $ac_count -gt 10 && break
+  done
+  rm -f conftest.in conftest.tmp conftest.nl conftest.out;;
+esac
+
+      $ac_path_GREP_found && break 3
+    done
+  done
+  done
+IFS=$as_save_IFS
+  if test -z "$ac_cv_path_GREP"; then
+    as_fn_error $? "no acceptable grep could be found in $PATH$PATH_SEPARATOR/usr/xpg4/bin" "$LINENO" 5
+  fi
+else
+  ac_cv_path_GREP=$GREP
+fi
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_path_GREP" >&5
+printf "%s\n" "$ac_cv_path_GREP" >&6; }
+ GREP="$ac_cv_path_GREP"
+
+
+# Autoupdate added the next two lines to ensure that your configure
+# script's behavior did not change.  They are probably safe to remove.
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for egrep" >&5
+printf %s "checking for egrep... " >&6; }
+if test ${ac_cv_path_EGREP+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  if echo a | $GREP -E '(a|b)' >/dev/null 2>&1
+   then ac_cv_path_EGREP="$GREP -E"
+   else
+     if test -z "$EGREP"; then
+  ac_path_EGREP_found=false
+  # Loop through the user's path and test for each of PROGNAME-LIST
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH$PATH_SEPARATOR/usr/xpg4/bin
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_prog in egrep
+   do
+    for ac_exec_ext in '' $ac_executable_extensions; do
+      ac_path_EGREP="$as_dir$ac_prog$ac_exec_ext"
+      as_fn_executable_p "$ac_path_EGREP" || continue
+# Check for GNU ac_path_EGREP and select it if it is found.
+  # Check for GNU $ac_path_EGREP
+case `"$ac_path_EGREP" --version 2>&1` in
+*GNU*)
+  ac_cv_path_EGREP="$ac_path_EGREP" ac_path_EGREP_found=:;;
+*)
+  ac_count=0
+  printf %s 0123456789 >"conftest.in"
+  while :
+  do
+    cat "conftest.in" "conftest.in" >"conftest.tmp"
+    mv "conftest.tmp" "conftest.in"
+    cp "conftest.in" "conftest.nl"
+    printf "%s\n" 'EGREP' >> "conftest.nl"
+    "$ac_path_EGREP" 'EGREP$' < "conftest.nl" >"conftest.out" 2>/dev/null || break
+    diff "conftest.out" "conftest.nl" >/dev/null 2>&1 || break
+    as_fn_arith $ac_count + 1 && ac_count=$as_val
+    if test $ac_count -gt ${ac_path_EGREP_max-0}; then
+      # Best one so far, save it but keep looking for a better one
+      ac_cv_path_EGREP="$ac_path_EGREP"
+      ac_path_EGREP_max=$ac_count
+    fi
+    # 10*(2^10) chars as input seems more than enough
+    test $ac_count -gt 10 && break
+  done
+  rm -f conftest.in conftest.tmp conftest.nl conftest.out;;
+esac
+
+      $ac_path_EGREP_found && break 3
+    done
+  done
+  done
+IFS=$as_save_IFS
+  if test -z "$ac_cv_path_EGREP"; then
+    as_fn_error $? "no acceptable egrep could be found in $PATH$PATH_SEPARATOR/usr/xpg4/bin" "$LINENO" 5
+  fi
+else
+  ac_cv_path_EGREP=$EGREP
+fi
+
+   fi
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_path_EGREP" >&5
+printf "%s\n" "$ac_cv_path_EGREP" >&6; }
+ EGREP="$ac_cv_path_EGREP"
+
+
+
 ac_fn_c_check_header_compile "$LINENO" "arpa/inet.h" "ac_cv_header_arpa_inet_h" "$ac_includes_default"
 if test "x$ac_cv_header_arpa_inet_h" = xyes
 then :
@@ -6454,12 +6585,6 @@ then :
   printf "%s\n" "#define HAVE_GNUTLS_GNUTLS_H 1" >>confdefs.h
 
 fi
-ac_fn_c_check_header_compile "$LINENO" "wolfssl/ssl.h" "ac_cv_header_wolfssl_ssl_h" "$ac_includes_default"
-if test "x$ac_cv_header_wolfssl_ssl_h" = xyes
-then :
-  printf "%s\n" "#define HAVE_WOLFSSL_SSL_H 1" >>confdefs.h
-
-fi
 ac_fn_c_check_header_compile "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
 if test "x$ac_cv_header_zlib_h" = xyes
 then :
@@ -6578,6 +6703,16 @@ printf "%s\n" "#define size_t unsigned int" >>confdefs.h
 
 fi
 
+
+
+# Obsolete code to be removed.
+if test $ac_cv_header_sys_time_h = yes; then
+
+printf "%s\n" "#define TIME_WITH_SYS_TIME 1" >>confdefs.h
+
+fi
+# End of obsolete code.
+
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether struct tm is in sys/time.h or time.h" >&5
 printf %s "checking whether struct tm is in sys/time.h or time.h... " >&6; }
 if test ${ac_cv_struct_tm+y}
@@ -6642,7 +6777,6 @@ fi
 
 
 # Checks for library functions.
-
 ac_func=
 for ac_item in $ac_func_c_list
 do
@@ -6877,6 +7011,39 @@ if test $ac_cv_func_working_mktime = no; then
 esac
 
 fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking return type of signal handlers" >&5
+printf %s "checking return type of signal handlers... " >&6; }
+if test ${ac_cv_type_signal+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/types.h>
+#include <signal.h>
+
+int
+main (void)
+{
+return *(signal (0, 0)) (0) == 1;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  ac_cv_type_signal=int
+else $as_nop
+  ac_cv_type_signal=void
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_type_signal" >&5
+printf "%s\n" "$ac_cv_type_signal" >&6; }
+
+printf "%s\n" "#define RETSIGTYPE $ac_cv_type_signal" >>confdefs.h
+
 
 
   for ac_func in strftime
@@ -7523,23 +7690,13 @@ else $as_nop
 fi
 
 
-# the enable-wolfssl option enables WolfSSL in favor of OpenSSL
-# Check whether --enable-wolfssl was given.
-if test ${enable_wolfssl+y}
-then :
-  enableval=$enable_wolfssl; with_wolfssl="$enable_wolfssl"
-else $as_nop
-  with_wolfssl="no"
-fi
-
-
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for disable openssl in library" >&5
 printf %s "checking for disable openssl in library... " >&6; }
 if test "x$with_openssl" = "xyes"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for enable gnutls or wolfssl in library" >&5
-printf %s "checking for enable gnutls or wolfssl in library... " >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for enable gnutls in library" >&5
+printf %s "checking for enable gnutls in library... " >&6; }
   if test "x$with_gnutls" = "xyes"; then
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
@@ -7549,24 +7706,14 @@ printf "%s\n" "yes" >&6; }
     SAMPLE_SSL_LIBS="-lgnutls -lgcrypt -lgpg-error -lz"
     WSDL2H_SOAP_CPP_LIB="libgsoapssl++.a"
   else
-    if test "x$with_wolfssl" = "xyes"; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-      WSDL2H_EXTRA_FLAGS="-DWITH_WOLFSSL -DWITH_GZIP"
-      WSDL2H_EXTRA_LIBS="${WSDL2H_EXTRA_LIBS} -lwolfssl -lz"
-      SAMPLE_INCLUDES=
-      SAMPLE_SSL_LIBS="-lwolfssl -lz"
-      WSDL2H_SOAP_CPP_LIB="libgsoapssl++.a"
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-      WSDL2H_EXTRA_FLAGS="-DWITH_OPENSSL -DWITH_GZIP"
-      # compile with wsdl2h when OPENSSL is available
-      WSDL2H_EXTRA_LIBS="${WSDL2H_EXTRA_LIBS} -lssl -lcrypto -lz"
-      SAMPLE_INCLUDES=
-      SAMPLE_SSL_LIBS="-lssl -lcrypto -lz"
-      WSDL2H_SOAP_CPP_LIB="libgsoapssl++.a"
-    fi
+    WSDL2H_EXTRA_FLAGS="-DWITH_OPENSSL -DWITH_GZIP"
+    # compile with wsdl2h when OPENSSL is available
+    WSDL2H_EXTRA_LIBS="${WSDL2H_EXTRA_LIBS} -lssl -lcrypto -lz"
+    SAMPLE_INCLUDES=
+    SAMPLE_SSL_LIBS="-lssl -lcrypto -lz"
+    WSDL2H_SOAP_CPP_LIB="libgsoapssl++.a"
   fi
   if test -n "$ZLIB"; then
     WSDL2H_EXTRA_FLAGS="-I${ZLIB}/include ${WSDL2H_EXTRA_FLAGS}"
@@ -7588,7 +7735,7 @@ printf "%s\n" "yes" >&6; }
   SAMPLE_INCLUDES=
   WSDL2H_SOAP_CPP_LIB="libgsoap++.a"
 fi
- if test "x$with_openssl" = "xyes" -a "x$with_gnutls" != "xyes" -a "x$with_wolfssl" != "xyes"; then
+ if test "x$with_openssl" = "xyes" -a "x$with_gnutls" != "xyes"; then
   WITH_OPENSSL_TRUE=
   WITH_OPENSSL_FALSE='#'
 else
@@ -7656,7 +7803,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile gsoap.pc gsoap++.pc gsoapck.pc gsoapck++.pc gsoapssl.pc gsoapssl++.pc gsoap/Makefile gsoap/src/Makefile gsoap/wsdl/Makefile gsoap/samples/Makefile gsoap/samples/autotest/Makefile gsoap/samples/aws/Makefile gsoap/samples/calc/Makefile gsoap/samples/calc++/Makefile gsoap/samples/chaining/Makefile gsoap/samples/chaining++/Makefile gsoap/samples/databinding/Makefile gsoap/samples/dime/Makefile gsoap/samples/dom/Makefile gsoap/samples/oneway/Makefile gsoap/samples/oneway++/Makefile gsoap/samples/factory/Makefile gsoap/samples/factorytest/Makefile gsoap/samples/gmt/Makefile gsoap/samples/googleapi/Makefile gsoap/samples/hello/Makefile gsoap/samples/httpcookies/Makefile gsoap/samples/lu/Makefile gsoap/samples/magic/Makefile gsoap/samples/mashup/Makefile gsoap/samples/mashup++/Makefile gsoap/samples/mtom/Makefile gsoap/samples/mtom-stream/Makefile gsoap/samples/polytest/Makefile gsoap/samples/primes/Makefile gsoap/samples/roll/Makefile gsoap/samples/router/Makefile gsoap/samples/atom/Makefile gsoap/samples/rss/Makefile gsoap/samples/ssl/Makefile gsoap/samples/template/Makefile gsoap/samples/udp/Makefile gsoap/samples/tcp/Makefile gsoap/samples/varparam/Makefile gsoap/samples/wsa/Makefile gsoap/samples/wsrm/Makefile gsoap/samples/wsse/Makefile gsoap/samples/wst/Makefile gsoap/samples/xml-rpc-json/Makefile gsoap/samples/rest/Makefile gsoap/samples/testmsgr/Makefile gsoap/samples/async/Makefile"
+ac_config_files="$ac_config_files Makefile gsoap.pc gsoap++.pc gsoapck.pc gsoapck++.pc gsoapssl.pc gsoapssl++.pc gsoap/Makefile gsoap/src/Makefile gsoap/wsdl/Makefile gsoap/samples/Makefile gsoap/samples/autotest/Makefile gsoap/samples/aws/Makefile gsoap/samples/calc/Makefile gsoap/samples/calc++/Makefile gsoap/samples/chaining/Makefile gsoap/samples/chaining++/Makefile gsoap/samples/databinding/Makefile gsoap/samples/dime/Makefile gsoap/samples/dom/Makefile gsoap/samples/oneway/Makefile gsoap/samples/oneway++/Makefile gsoap/samples/factory/Makefile gsoap/samples/factorytest/Makefile gsoap/samples/gmt/Makefile gsoap/samples/googleapi/Makefile gsoap/samples/hello/Makefile gsoap/samples/httpcookies/Makefile gsoap/samples/lu/Makefile gsoap/samples/magic/Makefile gsoap/samples/mashup/Makefile gsoap/samples/mashup++/Makefile gsoap/samples/mtom/Makefile gsoap/samples/mtom-stream/Makefile gsoap/samples/polytest/Makefile gsoap/samples/primes/Makefile gsoap/samples/roll/Makefile gsoap/samples/router/Makefile gsoap/samples/atom/Makefile gsoap/samples/rss/Makefile gsoap/samples/ssl/Makefile gsoap/samples/template/Makefile gsoap/samples/udp/Makefile gsoap/samples/varparam/Makefile gsoap/samples/wsa/Makefile gsoap/samples/wsrm/Makefile gsoap/samples/wsse/Makefile gsoap/samples/wst/Makefile gsoap/samples/xml-rpc-json/Makefile gsoap/samples/rest/Makefile gsoap/samples/testmsgr/Makefile gsoap/samples/async/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -7752,7 +7899,6 @@ DEFS=-DHAVE_CONFIG_H
 
 ac_libobjs=
 ac_ltlibobjs=
-U=
 for ac_i in : $LIBOBJS; do test "x$ac_i" = x: && continue
   # 1. Remove the extension, and $U if already installed.
   ac_script='s/\$U\././;s/\.o$//;s/\.obj$//'
@@ -8439,7 +8585,6 @@ do
     "gsoap/samples/ssl/Makefile") CONFIG_FILES="$CONFIG_FILES gsoap/samples/ssl/Makefile" ;;
     "gsoap/samples/template/Makefile") CONFIG_FILES="$CONFIG_FILES gsoap/samples/template/Makefile" ;;
     "gsoap/samples/udp/Makefile") CONFIG_FILES="$CONFIG_FILES gsoap/samples/udp/Makefile" ;;
-    "gsoap/samples/tcp/Makefile") CONFIG_FILES="$CONFIG_FILES gsoap/samples/tcp/Makefile" ;;
     "gsoap/samples/varparam/Makefile") CONFIG_FILES="$CONFIG_FILES gsoap/samples/varparam/Makefile" ;;
     "gsoap/samples/wsa/Makefile") CONFIG_FILES="$CONFIG_FILES gsoap/samples/wsa/Makefile" ;;
     "gsoap/samples/wsrm/Makefile") CONFIG_FILES="$CONFIG_FILES gsoap/samples/wsrm/Makefile" ;;

@@ -103,7 +103,6 @@ r send XML with default xmlns bindings
 s server (stand-alone)
 t use plain-text passwords (password digest by default)
 u use MTOM format with one MIME attachment
-w don't sign X509 token
 x use plain XML (no HTTP header), client only
 y buffered sends (experimental, disabled - not critical to use)
 z enable compression
@@ -163,7 +162,6 @@ int addenc = 0;
 int nobody = 0; /* do not sign the SOAP Body */
 int hmac = 0;   /* symmetric signature */
 int nokey = 0;  /* do not include signer's public key in message */
-int nox509sign = 0;  /* do not sign X509 token */
 int nohttp = 0;
 int sym = 0;    /* symmetric encryption */
 int enc = 0;    /* encryption */
@@ -340,8 +338,6 @@ int main(int argc, char **argv)
       soap_set_omode(soap, SOAP_ENC_MTOM | SOAP_ENC_DIME); /* this forces MTOM attachment format, to test */
       mtom = 1;
     }
-    if (strchr(argv[1], 'w'))
-      nox509sign = 1;
     if (strchr(argv[1], 'x'))
       nohttp = 1;
     if (strchr(argv[1], 'z'))
@@ -544,7 +540,7 @@ int main(int argc, char **argv)
 	{
           alg = SOAP_MEC_ENV_ENC_DES_CBC;
 	}
-        if (0) /* 1 to encrypt the SOAP Body only, 0 to encrypt the signature and the SOAP Body (recommended) */
+        if (0) /* 1 to encrypt the SOAP Body only, 1 to encrypt the signature and the SOAP Body (recommended) */
         {
           /* encrypt the SOAP Body only */
           if (soap_wsse_add_EncryptedKey(soap, alg, "Cert", cert, SubjectKeyId, NULL, NULL))
@@ -572,9 +568,7 @@ int main(int argc, char **argv)
       else /* RSA signature verification */
       {
 	if (nokey)
-        {
 	  soap_wsse_add_KeyInfo_KeyName(soap, "MyKey");
-        }
 	else
 	{
 	  soap_wsse_add_BinarySecurityTokenX509(soap, "X509Token", cert);
@@ -584,8 +578,6 @@ int main(int argc, char **argv)
 	  soap_wsse_sign(soap, SOAP_SMD_SIGN_RSA_SHA1, rsa_privk, 0);
 	else
 	  soap_wsse_sign_body(soap, SOAP_SMD_SIGN_RSA_SHA1, rsa_privk, 0);
-        if (nox509sign) /* do not sign X509 token */
-          soap_wsse_sign_only(soap, "Time User Body");
       }
 
       /* auto-verification of signatures in server responses */
@@ -705,9 +697,7 @@ int ns1__add(struct soap *soap, double a, double b, double *result)
   else
   {
     if (nokey)
-    {
       soap_wsse_add_KeyInfo_KeyName(soap, "MyKey");
-    }
     else
     {
       soap_wsse_add_BinarySecurityTokenX509(soap, "X509Token", cert);
@@ -825,9 +815,7 @@ int ns1__sub(struct soap *soap, double a, double b, double *result)
   else
   {
     if (nokey)
-    {
       soap_wsse_add_KeyInfo_KeyName(soap, "MyKey");
-    }
     else
     {
       soap_wsse_add_BinarySecurityTokenX509(soap, "X509Token", cert);
@@ -875,9 +863,7 @@ int ns1__mul(struct soap *soap, double a, double b, double *result)
   else
   {
     if (nokey)
-    {
       soap_wsse_add_KeyInfo_KeyName(soap, "MyKey");
-    }
     else
     {
       soap_wsse_add_BinarySecurityTokenX509(soap, "X509Token", cert);

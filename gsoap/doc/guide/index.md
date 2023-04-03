@@ -5,7 +5,7 @@ gSOAP user guide                                                    {#mainpage}
 
 # User guide
 
-<div align="right"><i>Copyright (c) 2000-2023, Genivia Inc.<br>All rights reserved.</i></div>
+<div align="right"><i>Copyright (c) 2000-2020, Genivia Inc.<br>All rights reserved.</i></div>
 
 # Introduction                                                         {#intro}
 
@@ -115,9 +115,9 @@ be interpreted as described in RFC-2119.
 * **XML**: implements a fast schema-specific XML pull parser that does not
   require intermediate storage of XML in a DOM to deserialize data.
 
-* **HTTP**: HTTP 1.0/1.1, IPv4 and IPv6, HTTPS (requires OpenSSL 3.0 or 1.1 or
-  GNUTLS), cookies, authentication, Zlib deflate and gzip compression, and
-  connecting through HTTP proxies.
+* **HTTP**: HTTP 1.0/1.1 (HTTP 2.0 will be available soon), IPv4 and IPv6,
+  HTTPS (requires OpenSSL or GNUTLS), cookies, authentication, Zlib deflate and
+  gzip compression, and connecting through HTTP proxies.
 
 * **Attachments**: MIME (SwA), DIME, and MTOM attachments are supported.
   Streaming capabilities to direct the data stream to/from resources using
@@ -195,9 +195,9 @@ To start using gSOAP, you will need:
 
 * A C or C++ compiler.
 
-* OpenSSL (3.0 or 1.1, earlier versions are supported but not recommended) or
-  GNUTLS and the Zlib libraries to enable SSL (HTTPS) and compression. These
-  libraries are available for most platforms and are often already installed.
+* OpenSSL (or GNUTLS) and the Zlib libraries to enable SSL (HTTPS) and
+  compression. These libraries are available for most platforms and are often
+  already installed.
 
 * Flex <http://flex.sourceforge.net> and Bison <http://www.gnu.org/software/bison>
   to build the soapcpp2 tool.  You can also build soapcpp2 without Bison and
@@ -1486,7 +1486,7 @@ The namespace mapping table is:
       { "SOAP-ENV", "http://schemas.xmlsoap.org/soap/envelope/"}, // must be first 
       { "SOAP-ENC", "http://schemas.xmlsoap.org/soap/encoding/"}, // must be second 
       { "xsi",      "http://www.w3.org/2001/XMLSchema-instance"}, // must be third 
-      { "xsd",      "http://www.w3.org/2001/XMLSchema"},          // must be fourth (2001 XML Schema)
+      { "xsd",      "http://www.w3.org/2001/XMLSchema"},          // 2001 XML Schema 
       { "ns2",      "urn:calc"},                                  // given by the service description 
       { NULL,       NULL}                                         // end of table 
     };
@@ -6636,16 +6636,7 @@ Or replace the `char*` strings that are used by default for C with `wchar_t*`:
 
     xsd__string = | wchar_t* | wchar_t*
 
-When the `ptr-use` part is not specified, it will be auto-generated
-as pointer `T*` for `use` type `T` or `std::shared_ptr<T>` when
-the variable `$POINTER = std::shared`.
-
-The `declaration` part need not be empty, for example if a type must be
-declared.  For example:
-
-    xsd__string = typedef std::string mystring; | mystring | std::optional<mystring>
-
-When a type binding requires only the `use` part to be changed, the
+When a type binding requires only the usage to be changed, the
 declaration part can be an ellipsis `...`, as in:
 
     prefix__type = ... | use | ptr-use
@@ -6735,20 +6726,6 @@ default.  For example, to change array size types to `size_t`:
 Permissible types are `int` and `size_t`.  This variable does not affect the
 size of dynamic arrays, `xsd__hexBinary` and `xsd__base64Binary` types, which
 is always `int`.
-
-When C++17 is enabled with wsdl2h and soapcpp2 option <b>`-c++17`</b>, you can
-also semi-automatically enable `std::optional` declarations with optional class
-and structure member variables.  This means that `std::optional` is used
-instead of a (smart) pointer to make a member optional.
-
-To enable `std::optional` with member variables that are primitive types,
-`typedef`, and `enum` automatically:
-
-    $OPTIONAL = std::optional
-
-Local unnamed simpleType restrictions may not adopt the specified optional type
-and still use pointers instead.  This limitation may be lifted in a future
-release.
 
 🔝 [Back to table of contents](#)
 
@@ -13638,7 +13615,6 @@ define                        | result
 `#WITH_IPV6_V6ONLY`           | enables IPv6 support with IPv6-only server option
 `#WITH_OPENSSL`               | enables OpenSSL, see Sections \ref clientopenssl and \ref serveropenssl  
 `#WITH_GNUTLS`                | enables GNUTLS, see Sections \ref clientopenssl and \ref serveropenssl  
-`#WITH_WOLFSSL`               | enables WolfSSL, see Sections \ref clientopenssl and \ref serveropenssl  
 `#WITH_GZIP`                  | enables gzip and deflate compression, see Section \ref compression  
 `#WITH_ZLIB`                  | enables deflate compression only, see Section \ref compression  
 `#WITH_NTLM`                  | enables NTLM support
@@ -13683,7 +13659,6 @@ define                       | result
 `#SOAP_MAXLENGTH`            | maximum string content length for strings not already constrained by XML schema validation constraints
 `#SOAP_MAXLEVEL`             | maximum XML nesting depth level permitted by the XML parser
 `#SOAP_MAXOCCURS`            | maximum number of array or container elements for containers that are not already constrained by XML schema validation constraints
-`#SOAP_MAXHTTPCHUNK`         | maximum HTTP chunk size receivable
 `#SOAP_MINDEFLATERATIO`      | trusted deflation ratio after `#SOAP_MAXINFLATESIZE` is reached
 `#SOAP_PURE_VIRTUAL`         | set to `= 0` when `#WITH_PURE_VIRTUAL` is defined
 `#SOAP_SSL_RSA_BITS`         | length of the RSA key (2048 by default) 
@@ -14948,12 +14923,6 @@ This callback is called by the HTTP FORM handler plugin to parse HTML forms rece
 
 This callback is called immediately after parsing a SOAP Header into the `::soap::header` structure.  The SOAP Header structure `::soap::header` can be inspected by this function and verified or rejected before the rest of the message with the SOAP Body is consumed.  Returns `#SOAP_OK` or a `::soap_status` (int) error code.  No built-in function is assigned to `::soap::fheader`.
 
-### fencoding
-
-`int (soap::fencoding)(struct soap *soap, const char *encoding)` 
-
-This callback is called when an unrecognized XML encoding format is encountered in an XML PI.  Supported encoding formats are latin (ASCII) and UTF-8.  Other encoding formats can be rejected or supported by setting this callback.  To reject the encoding, return a nonzero error code.  To accept the encoding without further action, return `#SOAP_OK`.  To decode the encoding, the input stream should be redictected through a decoder, for example by overriding the `::soap::frecv` callback with a specific handler to convert the encoding.
-
 ### fignore
 
 `int (soap::fignore)(struct soap *soap, const char *tag)` 
@@ -16063,18 +16032,15 @@ To override the host and port of the client connecting to a server, set `::soap:
 
 ## Secure Web services with HTTPS {#serveropenssl}
 
-To enable SSL for stand-alone gSOAP Web servers, first install OpenSSL (3.0 or 1.1) and use
-option the compile-time flag `#WITH_OPENSSL` to compile the sources with your C or C++ compiler.
+To enable SSL for stand-alone gSOAP Web servers, first install OpenSSL and use
+option the compile-time flag `#WITH_OPENSSL` to compile the sources with your C or C++ compiler
+(or use the compile-time flag `#WITH_GNUTLS` if you prefer GNUTLS), for example:
 
      c++ -DWITH_OPENSSL -o myprog myprog.cpp stdsoap2.cpp soapC.cpp soapServer.cpp -lssl -lcrypto
 
-Or with GNUTLS use `#WITH_GNUTLS` and link with libgnutls and optionally libgcrypt and libgpg-error:
+With GNUTLS:
 
      c++ -DWITH_GNUTLS -o myprog myprog.cpp stdsoap2.cpp soapC.cpp soapServer.cpp -lgnutls -lgcrypt -lgpg-error
-
-Or with WolfSSL use `#WITH_WOLFSSL`:
-
-     c++ -DWITH_WOLFSSL -o myprog myprog.cpp stdsoap2.cpp soapC.cpp soapServer.cpp -lwolfssl
 
 SSL support for stand-alone gSOAP Web services is enabled by calling
 `::soap_ssl_accept` to perform the SSL/TLS handshake after `::soap_accept`.  In
@@ -16083,8 +16049,8 @@ not used), and password need to be supplied. Instructions on how to do this can
 be found in the OpenSSL documentation <http://www.openssl.org>. See also
 Section \ref ssl .
 
-Let's take a look at an example SSL secure multi-threaded stand-alone SOAP Web
-Service:
+Let's take a look at an example SSL secure
+multi-threaded stand-alone SOAP Web Service:
 
 ~~~{.cpp}
     int main() 
@@ -16094,7 +16060,7 @@ Service:
       struct soap *soap, *tsoap; 
       soap_ssl_init(); /* init OpenSSL (skipping this or calling multiple times is OK, since the engine will init SSL automatically) */
       /* soap_ssl_noinit(); */ /* do not init OpenSSL (if SSL is already initialized elsewhere in this application) */
-      if (CRYPTO_thread_setup()) /* old OpenSSL < 1.1.0 thread mutex setup */
+      if (CRYPTO_thread_setup()) /* OpenSSL thread mutex setup */
       {
         fprintf(stderr, "Cannot setup thread mutex\n"); 
         exit(EXIT_FAILURE); 
@@ -16103,12 +16069,12 @@ Service:
       if (soap_ssl_server_context(soap, 
         SOAP_SSL_DEFAULT, 
         "server.pem",      /* keyfile: required when server must authenticate to clients (see SSL docs on how to obtain this file) */ 
-        "password",        /* password to read the keyfile (not used with GNUTLS and WolfSSL) */ 
-        "cacert.pem",      /* NULL or optional cacert file to store trusted certificates to authenticate clients */ 
-        NULL,              /* NULL or optional capath to directory with trusted certificates */ 
-        "dh512.pem",       /* optional DH file name or DH key len bits (minimum is 512, e.g. "512") to generate DH param, NULL to use RSA */ 
+        "password",        /* password to read the key file (not used with GNUTLS) */ 
+        "cacert.pem",      /* optional cacert file to store trusted certificates */ 
+        NULL,              /* optional capath to directory with trusted certificates */ 
+        "dh512.pem",       /* DH file name or DH key len bits (minimum is 512, e.g. "512") to generate DH param, if NULL use RSA */ 
         NULL,              /* if randfile!=NULL: use a file with random data to seed randomness */  
-        NULL               /* NULL or optional server identification to enable SSL session caching to speed up TLS (must be a unique name) */
+        NULL               /* optional server identification to enable SSL session caching to speed up TLS (must be a unique name) */
       )) 
       {
         soap_print_fault(soap, stderr); 
@@ -16144,7 +16110,7 @@ Service:
             sleep(1); /* failed, try again */
       } 
       soap_free(soap); /* deallocates SSL context */
-      CRYPTO_thread_cleanup(); /* old OpenSSL < 1.1.0 thread mutex cleanup */
+      CRYPTO_thread_cleanup(); /* OpenSSL thread mutex cleanup */
       return 0; 
     }  
 
@@ -16193,7 +16159,7 @@ in your code for multi-threaded applications by calling `CRYPTO_thread_setup()`
 and `CRYPTO_thread_cleanup()` as was shown in the code above.  OpenSSL 1.1.0
 and greater does not require these locks to be set up.  If you are not sure
 which version of OpenSSL you may be using with your multi-threaded application,
-then set up the locks.
+      then set up the locks.
 
 For Unix and Linux, make sure you have signal handlers set in your service
 and/or client applications to catch broken connections (`SIGPIPE`):
@@ -16209,16 +16175,16 @@ where, for example:
 ~~~
 
 By default, clients are not required to authenticate. To require client
-authentication use the `SOAP_SSL_REQUIRE_CLIENT_AUTHENTICATION` flag:
+authentication use the following:
 
 ~~~{.cpp}
     if (soap_ssl_server_context(&soap, 
         SOAP_SSL_REQUIRE_CLIENT_AUTHENTICATION, 
         "server.pem", 
         "password", 
-        "cacert.pem", /* certificates to authenticate clients */
+        "cacert.pem", 
         NULL, 
-        "dh512.pem",  /* optional use of DH, use NULL for RSA */
+        "dh512.pem", 
         NULL, 
         NULL)) 
     {
@@ -16230,11 +16196,10 @@ authentication use the `SOAP_SSL_REQUIRE_CLIENT_AUTHENTICATION` flag:
 This requires each client to authenticate with its certificate, in addition for
 the server to authenticate to the client.
 
-Since gSOAP release version 2.8.20, SSL v3 is disabled. To enable SSL v3
-together with TLS 1.0 and higher, use `#SOAP_SSLv3_TLSv1` with
-`::soap_ssl_server_context`.  To use TLS 1.1 and 1.2 use `SOAP_TLSv1_1 |
-SOAP_TLSv1_2`. To use TLS 1.2 only use `#SOAP_TLSv1_2`. To use SSL v3 only use
-`#SOAP_SSLv3`.
+Since release version 2.8.20, SSL v3 is disabled. To enable SSL v3 together with
+TLS 1.0 and higher, use `#SOAP_SSLv3_TLSv1` with `::soap_ssl_server_context`.
+To use TLS 1.1 and 1.2 use `SOAP_TLSv1_1 | SOAP_TLSv1_2`. To use TLS 1.2 only
+use `#SOAP_TLSv1_2`. To use SSL v3 only use `#SOAP_SSLv3`.
 
 The `cacert` file and `capath` are optional. Either one can be specified when
 clients must run on non-trusted systems (`capath` is not used with GNUTLS). We
@@ -16258,13 +16223,12 @@ some protection and the password is used in the client/server code to read the
 keyfile. GNUTLS does not support this feature and cannot encrypt or decrypt a
 keyfile.
 
-@warning It is important that the `#WITH_OPENSSL` macro (or `#WITH_GNUTLS` or
-`#WITH_WOLFSSL`) is consistently defined to compile the sources
-<i>`gsoap/stdsoap2.cpp`</i>, <i>`soapC.cpp`</i>, <i>`soapClient.cpp`</i>,
-<i>`soapServer.cpp`</i>, and all application sources that include
-<i>`gsoap/stdsoap2.h`</i> or <i>`soapH.h`</i>. If the macros are not
-consistently used, the application will crash due to a mismatches in the
-declaration and access of the `::soap` context.
+@warning It is important that the `#WITH_OPENSSL` macro must be consistently defined to
+compile the sources, such as <i>`gsoap/stdsoap2.cpp`</i>, <i>`soapC.cpp`</i>,
+<i>`soapClient.cpp`</i>, <i>`soapServer.cpp`</i>, and all application sources that
+include <i>`gsoap/stdsoap2.h`</i> or <i>`soapH.h`</i>. If the macros are not consistently
+used, the application will crash due to a mismatches in the declaration and
+access of the `::soap` context.
 
 See also API documentation Module \ref group_ssl for more details on the SSL/TLS functions.
 
@@ -16272,41 +16236,31 @@ See also API documentation Module \ref group_ssl for more details on the SSL/TLS
 
 ## Secure clients with HTTPS        {#clientopenssl}
 
-To utilize HTTPS at the client side, you need the OpenSSL library.  OpenSSL 3.0
-and 1.1 are supported.  Older versions are supported, but not recommended.
-Compile all the sources of your application with compile-time flag
-`#WITH_OPENSSL`
+To utilize HTTPS/SSL, you need to install the OpenSSL library on your platform
+or GNUTLS for a light-weight SSL/TLS library.  After installation, compile all
+the sources of your application with compile-time flag `#WITH_OPENSSL` (or
+`#WITH_GNUTLS` when using GNUTLS). For example on Linux:
 
      c++ -DWITH_OPENSSL myclient.cpp stdsoap.cpp soapC.cpp soapClient.cpp -lssl -lcrypto
 
-On some Unix systems you will need to link libxnet and libsocket:
+or Unix:
 
      c++ -DWITH_OPENSSL myclient.cpp stdsoap.cpp soapC.cpp soapClient.cpp -lxnet -lsocket -lnsl -lssl -lcrypto
 
-Instead of the compile-time flag, you can add the following line to <i>`soapdefs.h`</i>:
+or you can add the following line to <i>`soapdefs.h`</i>:
 
 ~~~{.cpp}
     #define WITH_OPENSSL
 ~~~
 
 and compile with compile-time flag `#WITH_SOAPDEFS_H` to include <i>`soapdefs.h`</i> in your project.
-
-You can also use with GNUTLS instead of OpenSSL with `#WITH_GNUTLS`:
+Alternatively, compile with GNUTLS:
 
      c++ -DWITH_GNUTLS myclient.cpp stdsoap.cpp soapC.cpp soapClient.cpp -lgnutls -lgcrypt -lgpg-error
 
-Or WolfSSL with `#WITH_WOLFSSL`:
 
-     c++ -DWITH_WOLFSSL myclient.cpp stdsoap.cpp soapC.cpp soapClient.cpp -lwolfssl
-
-A client program connects to a HTTPS server by simply using the prefix
-<i>`https:`</i> instead of <i>`http:`</i> in the endpoint URL of a service
-operation call to a Web Service to use encrypted transfers (if the service
-supports HTTPS).
-
-To make the connction secure, you will need to specify the <i>`cacerts.pem`</i>
-file with certificate authority certificates with which the server public key
-was signed:
+A client program simply uses the prefix <i>`https:`</i> instead of <i>`http:`</i> in the endpoint URL of a service operation call to a
+Web Service to use encrypted transfers (if the service supports HTTPS). You need to specify the client-side key file and password of the keyfile:
 
 ~~~{.cpp}
     struct soap soap;
@@ -16315,8 +16269,8 @@ was signed:
     soap_init(&soap);
     if (soap_ssl_client_context(&soap, 
       SOAP_SSL_DEFAULT, 
-      NULL,
-      NULL,
+      "client.pem",        /* keyfile: required only when client must authenticate to server (see SSL docs on how to obtain this file) */ 
+      "password",          /* password to read the key file (not used with GNUTLS) */ 
       "cacerts.pem",       /* cacert file to store trusted certificates (needed to verify server) */ 
       NULL,                /* capath to directory with trusted certificates */ 
       NULL         /* if randfile!=NULL: use a file with random data to seed randomness */  
@@ -16334,10 +16288,7 @@ accessible at run time. The <i>`cacerts.pem`</i> file included in the gSOAP sour
 contains the certificates of common CAs. This file must be supplied with the
 client, if server authentication is required. Alternatively, you can use the
 <i>`gsoap/plugin/cacerts.h`</i> and <i>`gsoap/plugin/cacerts.c`</i> code to embed CA certificates
-in your client code. Another alternatative is to use
-<i>`gsoap/samples/ssl/ssl_setup.c`</i> or
-<i>`gsoap/samples/ssl/ssl_setup.cpp`</i> for easy TLS/SSL setup. See the
-comments in these files.
+in your client code.
 
 You can specify a cipher list to use with TLSv1.2 and below with
 `SSL_CTX_set_cipher_list(soap->ctx, "...")` where `soap->ctx` is the SSL
@@ -16345,32 +16296,9 @@ context created by `::soap_ssl_client_context()`.  Likewise, use
 `SSL_CTX_set_ciphersuites(soap->ctx, "...")` to configure the available TLSv1.3
 ciphersuites.
 
-Refer to the OpenSSL documentation and manual pages of
+We refer to the OpenSSL documentation and manual pages of
 `SSL_CTX_set_cipher_list` and `SSL_CTX_set_ciphersuites` for details on the
 latest cipher lists and suites available to use.
-
-To make a connction with a server that requires the client to authenticate, you
-will need to specify the client-side key file and password of the keyfile:
-
-~~~{.cpp}
-    struct soap soap;
-    soap_ssl_init(); /* init OpenSSL (skipping this or calling multiple times is OK, since the engine will init SSL automatically) */
-    /* soap_ssl_noinit(); */ /* do not init OpenSSL (if SSL is already initialized elsewhere in this application) */
-    soap_init(&soap);
-    if (soap_ssl_client_context(&soap, 
-      SOAP_SSL_DEFAULT, 
-      "client.pem",        /* keyfile: required only when client must authenticate to server (see SSL docs on how to obtain this file) */ 
-      "password",          /* password to read the key file (not used with GNUTLS and WolfSSL) */ 
-      "cacerts.pem",       /* cacert file to store trusted certificates (needed to verify server) */ 
-      NULL,                /* capath to directory with trusted certificates */ 
-      NULL         /* if randfile!=NULL: use a file with random data to seed randomness */  
-    )) 
-    {
-      soap_print_fault(&soap, stderr); 
-      exit(EXIT_FAILURE); 
-    } 
-    soap_call_ns__mymethod(&soap, "https://domain/path/secure.cgi", "", ...);
-~~~
 
 Other client-side SSL options are `#SOAP_SSL_SKIP_HOST_CHECK` to skip the host name verification check and `#SOAP_SSL_ALLOW_EXPIRED_CERTIFICATE` to allow connecting to a host with an expired certificate. For example,
 
@@ -16431,15 +16359,13 @@ where, for example:
     void sigpipe_handle(int x) { }
 ~~~
 
-@warning It is important that the `#WITH_OPENSSL` macro (or `#WITH_GNUTLS` or
-`#WITH_WOLFSSL`) is consistently defined to compile the sources, such as
-<i>`gsoap/stdsoap2.cpp`</i>, <i>`soapC.cpp`</i>, <i>`soapClient.cpp`</i>,
-<i>`soapServer.cpp`</i>, and all application sources that include
-<i>`gsoap/stdsoap2.h`</i> or <i>`soapH.h`</i>. If the macros are not
-consistently used, the application will crash due to a mismatches in the
-declaration and access of the `::soap` context.  Alternatively, use library
-<b>`-lgsoapssl`</b> or <b>`-lgsoapssl++`</b> and compile everything else with
-`#WITH_OPENSSL`.
+@warning It is important that the `#WITH_OPENSSL` macro is consistently defined to
+compile the sources, such as <i>`gsoap/stdsoap2.cpp`</i>, <i>`soapC.cpp`</i>,
+<i>`soapClient.cpp`</i>, <i>`soapServer.cpp`</i>, and all application sources that
+include <i>`gsoap/stdsoap2.h`</i> or <i>`soapH.h`</i>. If the macros are not consistently
+used, the application will crash due to a mismatches in the declaration and
+access of the `::soap` context.  Alternatively, use library <b>`-lgsoapssl`</b>
+or <b>`-lgsoapssl++`</b> and compile everything else with `#WITH_OPENSSL`.
 
 @warning Concurrent client calls with threads should use separate `::soap`
 contexts In addition, the thread initialization code discussed in Section
@@ -16906,20 +16832,6 @@ to <i>`gsoap/stdsoap2.h`</i> and recompile the project code.
 @warning Do not link against the <i>`gsoap/libgsoap*`</i> libraries as these are not suitable
 for FastCGI. Compile <i>`gsoap/stdsoap2.c`</i> (or <i>`gsoap/stdsoap2.cpp`</i>)
 instead.
-
-The main program should contain a loop like this:
-
-~~~{.cpp}
-    struct soap soap;
-    soap_init(&soap);
-    while (soap_serve(&soap) != SOAP_EOF)
-      continue;
-    soap_done(&soap);
-~~~
-
-The `#SOAP_EOF` indicates that FastCGI no longer accepts requests.  Otherwise, `::soap_serve` returns `#SOAP_OK` on successfully request-response messaging or returns an error code when a messaging or processing error occurred.
-
-Managed Memory is released in the loop, unless the source code is compiled in `#DEBUG` mode.
 
 🔝 [Back to table of contents](#)
 
@@ -18663,4 +18575,4 @@ For more details, see the [WS-Discovery plugin](../../wsdd/html/wsdd_0.html) doc
 Copyright                                                           {#copyright}
 =========
 
-<i>Copyright (c) 2000-2023, Robert A. van Engelen, Genivia Inc.<br>All rights reserved.</i>
+<i>Copyright (c) 2000-2020, Robert A. van Engelen, Genivia Inc.<br>All rights reserved.</i>

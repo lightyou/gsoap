@@ -500,7 +500,7 @@ int xs__schema::read(const char *cwd, const char *loc, const char *relloc)
               location += 7;
             soap->recvfd = open(location, O_RDONLY, 0);
             if (vflag)
-              std::cerr << "Opening schema file " << location << (soap->recvfd < 0 ? " failed" : " successful") << std::endl;
+              std::cerr << "Opening file " << location << (soap->recvfd < 0 ? " failed" : " successful") << std::endl;
           }
         }
         if (soap->recvfd < 0 && import_path)
@@ -516,7 +516,7 @@ int xs__schema::read(const char *cwd, const char *loc, const char *relloc)
             location += 7;
           soap->recvfd = open(location, O_RDONLY, 0);
           if (vflag)
-            std::cerr << "Opening schema file " << location << (soap->recvfd < 0 ? " failed" : " successful") << std::endl;
+            std::cerr << "Opening file " << location << (soap->recvfd < 0 ? " failed" : " successful") << std::endl;
         }
         if (relloc && soap->recvfd < 0 && import_path)
         {
@@ -531,7 +531,7 @@ int xs__schema::read(const char *cwd, const char *loc, const char *relloc)
             location += 7;
           soap->recvfd = open(location, O_RDONLY, 0);
           if (vflag)
-            std::cerr << "Opening schema file " << location << (soap->recvfd < 0 ? " failed" : " successful") << std::endl;
+            std::cerr << "Opening file " << location << (soap->recvfd < 0 ? " failed" : " successful") << std::endl;
         }
         if (soap->recvfd < 0)
         {
@@ -1323,6 +1323,7 @@ int xs__import::preprocess(xs__schema &schema)
     {
       if (schemaLocation)
       {
+        schemaLocation = schema.absoluteLocation(schemaLocation);
         // only read from import locations not read already, uses static std::map
         static std::map<const char*, xs__schema*, ltstr> included;
         std::map<const char*, xs__schema*, ltstr>::iterator i = included.find(schemaLocation);
@@ -1332,13 +1333,11 @@ int xs__import::preprocess(xs__schema &schema)
           included[schemaLocation] = schemaRef = new xs__schema(schema.soap);
           if (!schemaRef)
             return SOAP_EOM;
-          schemaLocation = schema.absoluteLocation(schemaLocation);
           schemaRef->read(schema.sourceLocation(), schemaLocation, relative_schemaLocation);
         }
         else
         {
           schemaRef = (*i).second;
-          schemaLocation = schema.absoluteLocation(schemaLocation);
         }
         if (schemaRef)
         {
@@ -2843,8 +2842,10 @@ int xs__union::traverse(xs__schema &schema)
 void xs__union::mark()
 {
   if (Oflag > 1)
+  {
     for (std::vector<xs__simpleType>::iterator i = simpleType.begin(); i != simpleType.end(); ++i)
       (*i).mark();
+  }
 }
 
 int xs__all::traverse(xs__schema &schema)

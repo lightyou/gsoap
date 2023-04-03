@@ -1,10 +1,10 @@
 /*
-        stdsoap2.h 2.8.126
+        stdsoap2.h 2.8.117
 
         gSOAP runtime engine
 
 gSOAP XML Web services tools
-Copyright (C) 2000-2023, Robert van Engelen, Genivia Inc., All Rights Reserved.
+Copyright (C) 2000-2021, Robert van Engelen, Genivia Inc., All Rights Reserved.
 This part of the software is released under ONE of the following licenses:
 GPL or the gSOAP public license.
 --------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
 
 The Initial Developer of the Original Code is Robert A. van Engelen.
-Copyright (C) 2000-2023, Robert van Engelen, Genivia Inc., All Rights Reserved.
+Copyright (C) 2000-2021, Robert van Engelen, Genivia Inc., All Rights Reserved.
 --------------------------------------------------------------------------------
 GPL license.
 
@@ -52,7 +52,7 @@ A commercial use license is available from Genivia, Inc., contact@genivia.com
 --------------------------------------------------------------------------------
 */
 
-#define GSOAP_VERSION 208126
+#define GSOAP_VERSION 208117
 
 #ifdef WITH_SOAPDEFS_H
 # include "soapdefs.h"          /* include user-defined stuff in soapdefs.h */
@@ -397,7 +397,6 @@ extern intmax_t __strtoull(const char*, char**, int);
 #  define SOAP_ULONG_FORMAT "%qu"
 #  define HAVE_ISNAN
 #  define HAVE_ISINF
-#  define HAVE_INTTYPES_H
 #  define HAVE_LOCALE_H
 #  define HAVE_XLOCALE_H
 #  define HAVE_RANDOM
@@ -575,7 +574,6 @@ extern intmax_t __strtoull(const char*, char**, int);
 #  define HAVE_ASCTIME_R
 #  define HAVE_LOCALTIME_R
 #  define HAVE_STRERROR_R
-#  define HAVE_INTTYPES_H
 #  define HAVE_LOCALE_H
 # endif
 #endif
@@ -664,7 +662,7 @@ extern intmax_t __strtoull(const char*, char**, int);
 #  include <ctype.h>
 # endif
 # if !defined(HAVE_CONFIG_H) || defined(HAVE_LIMITS_H)
-#  include <limits.h>   /* for MB_LEN_MAX strtol strtoll strtoul strtoull */
+#  include <limits.h>   /* for MB_LEN_MAX */
 # endif
 # if !defined(HAVE_CONFIG_H) || defined(HAVE_FLOAT_H)
 #  include <float.h>    /* for INFINITY */
@@ -930,10 +928,6 @@ extern intmax_t __strtoull(const char*, char**, int);
 #   define HAVE_PTHREAD_H /* make GNUTLS thread safe */
 #  endif
 # endif
-#endif
-
-#ifdef WITH_WOLFSSL
-# include <wolfssl/ssl.h>
 #endif
 
 #ifdef WITH_SYSTEMSSL
@@ -1252,11 +1246,6 @@ extern "C" {
 # define SOAP_INDEX_RECV  (0)
 # define SOAP_INDEX_SENT  (1)
 # define SOAP_INDEX_TEST  (2)
-#endif
-
-/* max HTTP chunk size is 2GB by default, can be larger but not to exceed size_t range max */
-#ifndef SOAP_MAXHTTPCHUNK
-# define SOAP_MAXHTTPCHUNK (2147483647)
 #endif
 
 /* Tag name of multiref elements in SOAP 1.1 encoding */
@@ -2783,7 +2772,6 @@ struct SOAP_CMAC soap
   size_t (*frecv)(struct soap*, char*, size_t);
   int (*fpoll)(struct soap*);
   void (*fseterror)(struct soap*, const char **c, const char **s);
-  int (*fencoding)(struct soap*, const char*);
   int (*fignore)(struct soap*, const char*);
   int (*fserveloop)(struct soap*);
   void *(*fplugin)(struct soap*, const char*);
@@ -2852,21 +2840,12 @@ struct SOAP_CMAC soap
   gnutls_session_t session;                     /* session pointer */
   gnutls_dh_params_t dh_params;
   gnutls_rsa_params_t rsa_params;
-#elif defined(WITH_WOLFSSL)     /* WolfSSL */
-  int (*fsslauth)(struct soap*);
-  VerifyCallback fsslverify;    /* callback to verify certificates */
-  void *bio;                    /* N/A */
-  WOLFSSL *ssl;                 /* ssl socket */
-  WOLFSSL_CTX *ctx;             /* environment */
-  void *session;                /* N/A */
-  const char *dhfile;           /* N/A */
-  const char *randfile;         /* N/A */
 #elif defined(WITH_SYSTEMSSL)   /* SYSTEM SSL */
   int (*fsslauth)(struct soap*);
   void *fsslverify;             /* N/A */
   void *bio;                    /* N/A */
-  gsk_handle ssl;               /* ssl socket */
   gsk_handle ctx;               /* environment */
+  gsk_handle ssl;               /* ssl socket */
   void *session;                /* N/A */
   const char *dhfile;           /* N/A */
   const char *randfile;         /* N/A */

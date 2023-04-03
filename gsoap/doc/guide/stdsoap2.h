@@ -3,7 +3,7 @@
         Annotated and simplified stdsoap2.h to generate the user guide
 
 gSOAP XML Web services tools
-Copyright (C) 2000-2023, Robert van Engelen, Genivia Inc., All Rights Reserved.
+Copyright (C) 2000-2020, Robert van Engelen, Genivia Inc., All Rights Reserved.
 This part of the software is released under ONE of the following licenses:
 GPL or the gSOAP public license.
 --------------------------------------------------------------------------------
@@ -18,7 +18,7 @@ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
 
 The Initial Developer of the Original Code is Robert A. van Engelen.
-Copyright (C) 2000-2023, Robert van Engelen, Genivia Inc., All Rights Reserved.
+Copyright (C) 2000-2020, Robert van Engelen, Genivia Inc., All Rights Reserved.
 --------------------------------------------------------------------------------
 GPL license.
 
@@ -352,7 +352,6 @@ This module defines the following compile-time flags to configure the engine bui
 - `#WITH_IPV6_V6ONLY`
 - `#WITH_OPENSSL`
 - `#WITH_GNUTLS`
-- `#WITH_WOLFSSL`
 - `#WITH_GZIP`
 - `#WITH_ZLIB`
 - `#WITH_NTLM`
@@ -574,12 +573,8 @@ if (soap_valid_socket(soap_bind(soap, NULL, PORTNUM, BACKLOG)))
 */
 #define WITH_IPV6_V6ONLY
 
-/// When this macro is defined at compile time (undefined by default), enables activation and linkage with OpenSSL for HTTPS and WS-Security (this macro should also be defined when using plugins that rely on OpenSSL)
+/// When this macro is defined at compile time (undefined by default), enables linkage with OpenSSL for HTTPS and WS-Security (this macro should also be defined when using plugins that rely on OpenSSL)
 /**
-OpenSSL 3.0 and 1.1 are supported.  Earlier OpenSSL versions are also supported, but not recommended.
-
-Alternatives to OpenSSL are GNUTLS and WolfSSL with `#WITH_GNUTLS` or `#WITH_WOLFSSL`.
-
 Use the following functions to configure SSL/TLS connections and to accept SSL/TLS connections:
 - `::soap_ssl_init`
 - `::soap_ssl_noinit`
@@ -596,7 +591,7 @@ Use the following functions to configure SSL/TLS connections and to accept SSL/T
 */
 #define WITH_OPENSSL
 
-/// When this macro is defined at compile time (undefined by default), enables activation and linkage the GNUTLS library to enable HTTPS in the engine
+/// When this macro is defined at compile time (undefined by default), enables linking the GNUTLS library to enable HTTPS in the engine
 /**
 Use the following functions to configure SSL/TLS connections and to accept SSL/TLS connections:
 - `::soap_ssl_init`
@@ -610,29 +605,8 @@ Use the following functions to configure SSL/TLS connections and to accept SSL/T
 
     c++ -D WITH_GNUTLS -o client stdsoap2.cpp soapC.cpp soapClient.cpp client.cpp -lgnutls
     c++ -D WITH_GNUTLS -o server stdsoap2.cpp soapC.cpp soapServer.cpp server.cpp -lgnutls
-
-Link with libgnutls and optionally libgcrypt and libgpg-error.
 */
 #define WITH_GNUTLS
-
-/// When this macro is defined at compile time (undefined by default), enables activation and linkage of the WolfSSL library to enable HTTPS in the engine
-/**
-Use the following functions to configure SSL/TLS connections and to accept SSL/TLS connections:
-- `::soap_ssl_init`
-- `::soap_ssl_noinit`
-- `::soap_ssl_client_context`
-- `::soap_ssl_server_context`
-- `::soap_ssl_crl`
-- `::soap_ssl_accept`
-
-@par Examples:
-
-    c++ -D WITH_WOLFSSL -o client stdsoap2.cpp soapC.cpp soapClient.cpp client.cpp -lwolfssl
-    c++ -D WITH_WOLFSSL -o server stdsoap2.cpp soapC.cpp soapServer.cpp server.cpp -lwolfssl
-
-Link with libwolfssl.
-*/
-#define WITH_WOLFSSL
 
 /// When this macro is defined at compile time (undefined by default), enables linkage with the zlib library for HTTP message compression (using compress and gzip methods) when the `#SOAP_ENC_ZLIB` mode flag is enabled at runtime
 /**
@@ -1149,7 +1123,6 @@ This module defines the following macros with values to configure the engine bui
 - `#SOAP_MAXLENGTH`
 - `#SOAP_MAXLEVEL`
 - `#SOAP_MAXOCCURS`
-- `#SOAP_MAXHTTPCHUNK`
 - `#SOAP_MINDEFLATERATIO`
 - `#SOAP_PURE_VIRTUAL`
 - `#SOAP_SSL_RSA_BITS`
@@ -1292,9 +1265,6 @@ DIME attachments sizes are limited to `#SOAP_MAXDIMESIZE`.  Increase this value 
 
 /// User-definable maximum number of array or container elements for containers that are not already constrained by XML schema validation constraints, must be greater than zero (the value is 100000 by default)
 #define SOAP_MAXOCCURS (100000)
-
-/// User-definable maximum HTTP chunk size receivable (the value is 2147483647 by default), also HTTP chunk sizes cannot exceed `::soap::recv_maxlength`.
-#define SOAP_MAXHTTPCHUNK (2147483647)
 
 /// Trusted deflation ratio after `#SOAP_MAXINFLATESIZE` is reached, trust when compressed / deflated > `#SOAP_MINDEFLATERATIO` (default is 0.00096899224806 or 1032:1, which is according to the zlib site: "The limit (1032:1) comes from the fact that one length/distance pair can represent at most 258 output bytes. A length requires at least one bit and a distance requires at least one bit, so two bits in can give 258 bytes out, or eight bits in give 1032 bytes out. A dynamic block has no length restriction, so you could get arbitrarily close to the limit of 1032:1."
 #define SOAP_MINDEFLATERATIO (1.0/1032.0)
@@ -1862,7 +1832,7 @@ struct soap *soap = soap_new1(SOAP_ENC_ZLIB); // HTTP compression
 */
 #define SOAP_ENC_ZLIB 0x00000400
 
-/// `::soap_mode` ENC input/output flag value to enable TLS/SSL, e.g. HTTPS, requires OpenSSL, GNUTLS or WolfSSL enabled with compile-time flag `#WITH_OPENSSL`, `#WITH_GNUTLS`, or `#WITH_WOLFSSL` (flag for internal use only)
+/// `::soap_mode` ENC input/output flag value to enable TLS/SSL, e.g. HTTPS, requires OpenSSL or GNUTLS enabled with compile-time flag `#WITH_OPENSSL` or `#WITH_GNUTLS` (for internal use only)
 #define SOAP_ENC_SSL 0x00000800
 
 /// `::soap_mode` XML input flag value to enable strict XML validation of messages received
@@ -2228,7 +2198,7 @@ else
 */
 #define SOAP_C_NOIOB 0x01000000
 
-/// `::soap_mode` input/output flag value to serialize and deserialize 8-bit C/C++ strings containing UTF-8 encoded Unicode characters
+/// `::soap_mode` input/output flag value to serialize and deserialize 8-bit C/C++ strings containing UTF-8 encoded wide characters
 /**
 @par Example:
 
@@ -2928,7 +2898,7 @@ struct soap {
   short version;
   /// User-definable <i>`SOAP-ENV:encodingStyle`</i> URI value
   /**
-  This URI string value is pre-defined by the engine depending on the SOAP protocol version used, setting this to NULL means no SOAP encodingStyle.  Setting this to an empty string "" means that the engine will set the encodingStyle URI according to the SOAP version used.  However, the encodingStyle is always set if the interface header file for soappcpp2 explicitly specifies an encoding or literal.
+  This URI string value is pre-defined by the engine depending on the SOAP protocol version used, setting this to NULL means no SOAP encodingStyle, setting this to "" means that the engine will set the encodingStyle URI according to the SOAP version used.
 
   @see `::soap::version`, `::soap_set_version`.
   */
@@ -4482,20 +4452,6 @@ struct soap {
   @returns `#SOAP_OK` or a `::soap_status` error code
   */
   int (*fheader)(struct soap *soap);
-  /// Callback to catch unrecognized XML encoding formats
-  /**
-  @ingroup group_callbacks
-  This callback is called when an unrecognized XML encoding format is encountered in an XML PI.  Supported encoding formats are latin (ASCII) and UTF-8.  Other encoding formats can be rejected or supported by setting this callback.  To reject the encoding, return a nonzero error code.  To accept the encoding without further action, return `#SOAP_OK`.  To decode the encoding, the input stream should be redictected through a decoder, for example by overriding the `::soap::frecv` callback with a specific handler to convert the encoding.
-
-  @see `::soap::user` and `::soap::frecv`.
-
-  @par Example:
-
-  @param soap `::soap` context
-  @param encoding XML encoding extracted from the XML PI header
-  @returns `#SOAP_OK` or a `::soap_status` error code
-  */
-  int (*fencoding)(struct soap *soap, const char *encoding);
   /// Callback to catch unrecognized XML elements and overrides `#SOAP_XML_STRICT` validation errors for these
   /**
   @ingroup group_callbacks
@@ -4529,7 +4485,6 @@ struct soap {
   ~~~
 
   @param soap `::soap` context
-  @param tag XML tag name
   @returns `#SOAP_OK` or a `::soap_status` error code
   */
   int (*fignore)(struct soap *soap, const char *tag);
@@ -5113,7 +5068,7 @@ struct soap {
   /// Callback to initialize the OpenSSL library
   /**
   @ingroup group_callbacks
-  This callback is called to initialize the OpenSSL, GNUTLS, or WolfSSL context for HTTPS connections configured with the parameters passed to `::soap_ssl_client_context` and `::soap_ssl_server_context`.  Returns `#SOAP_OK` or a `::soap_status` (int) error code.  The built-in function assigned to `::soap::fsslauth` is `ssl_auth_init`.
+  This callback is called to initialize the OpenSSL or GNUTLS context for HTTPS connections configured with the parameters passed to `::soap_ssl_client_context` and `::soap_ssl_server_context`.  Returns `#SOAP_OK` or a `::soap_status` (int) error code.  The built-in function assigned to `::soap::fsslauth` is `ssl_auth_init`.
 
   @see `::soap::user`.
 
@@ -5878,7 +5833,7 @@ Streaming MIME/MTOM attachment callbacks:
 - `::soap::fmimewrite`
 - `::soap::fmimewriteclose`
 
-OpenSSL, GNUTLS and WolfSSL client-side SSL/TLS certificate verification callbacks:
+OpenSSL and GNUTLS SSL/TLS callbacks:
 - `::soap::fsslauth`
 - `::soap::fsslverify`
 
@@ -6041,7 +5996,7 @@ void soap_ssl_noinit(void)
 
 /// Initialize the server-side SSL/TLS context
 /**
-This function initializes the server-side SSL/TLS context of OpenSSL, GNUTLS, or WolfSSL.  The `flags` parameter initializes the context with a combination of `::soap_ssl_flags`.  The `keyfile` parameter when non-NULL is the server's private key PEM file, typically concatenated with its certificate in the PEM file.  The `password` parameter when non-NULL is used to unlock the password-protected private key in the key file.  The `cafile` parameter when non-NULL is used to authenticate clients when the `#SOAP_SSL_REQUIRE_CLIENT_AUTHENTICATION` flag is used and contains the client or CA certificate(s).  Alternatively, a directory name `capath` can be specified to point to a directory with the certificate(s).  The `dhfile` parameter when non-NULL is a file with DH parameters to use DH instead of RSA.  Alternatively, the `dhfile` parameter can be a numeric string value greater than 512 to let the engine generate the DH parameters, but beware this can take a while to execute.  The `randfile` parameter when non-NULL can be used to seed the PRNG using the specified file with random data.  The `sid` parameter when non-NULL is used for server-side session caching using a specified unique name per server.  Returns `#SOAP_OK` or a `::soap_status` error code.
+This function initializes the server-side SSL/TLS context of OpenSSL or GNUTLS library.  The `flags` parameter initializes the context with a combination of `::soap_ssl_flags`.  The `keyfile` parameter when non-NULL is the server's private key PEM file, typically concatenated with its certificate in the PEM file.  The `password` parameter when non-NULL is used to unlock the password-protected private key in the key file.  The `cafile` parameter when non-NULL is used to authenticate clients when the `#SOAP_SSL_REQUIRE_CLIENT_AUTHENTICATION` flag is used and contains the client or CA certificate(s).  Alternatively, a directory name `capath` can be specified to point to a directory with the certificate(s).  The `dhfile` parameter when non-NULL is a file with DH parameters to use DH instead of RSA.  Alternatively, the `dhfile` parameter can be a numeric string value greater than 512 to let the engine generate the DH parameters, but beware this can take a while to execute.  The `randfile` parameter when non-NULL can be used to seed the PRNG using the specified file with random data.  The `sid` parameter when non-NULL is used for server-side session caching using a specified unique name per server.  Returns `#SOAP_OK` or a `::soap_status` error code.
 
 All strings passed to this function except `sid` must be persistent in memory until the SSL/TLS context is implicitly deleted when the `::soap` context is deleted.
 
@@ -6059,10 +6014,10 @@ if (soap_ssl_server_context(soap,
       SOAP_SSL_DEFAULT, // authenticate, use TLSv1.0 to 1.3
       "server.pem",     // private key and certificate
       "password",       // password to read server.pem
-      NULL,             // no certificates to authenticate clients
-      NULL,             // no CA path to authenticate clients
-      NULL,             // use RSA, not DH
-      NULL,             // no rand file to seed randomness entropy
+      NULL,
+      NULL,
+      NULL,
+      NULL,
       "my_unique_server_id123" // server identification to enable SSL session caching to speed up TLS
       ))
 {
@@ -6081,7 +6036,7 @@ if (soap_ssl_server_context(soap,
       "password",                  // password to read server.pem
       NULL,
       NULL,
-      "dh1024.pem",                // use DH with 1024 bits instead of RSA
+      "dh1024.pem",                // use DH with 1024 bits
       NULL,
       "my_unique_server_id123"     // identification to enable SSL session caching to speed up TLS
       ))
@@ -6120,7 +6075,7 @@ if (soap_ssl_server_context(soap,
       "server.pem",                           // private key and certificate
       "password",                             // password to read server.pem
       "cacert.pem",                           // certificate to authenticate clients
-      NULL,                                   // no CA path to certificates to authenticate clients
+      NULL,
       NULL,
       NULL,
       soap_rand_uuid(soap, NULL) // identification to enable SSL session caching to speed up TLS
@@ -6134,7 +6089,7 @@ if (soap_ssl_server_context(soap,
 SSL_CTX_set_cipher_list(soap->ctx, "HIGH:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4:!DH");
 ~~~
 
-@note Requires compilation with `#WITH_OPENSSL`, `#WITH_GNUTLS`, or `#WITH_WOLFSSL`.
+@note Requires compilation with `#WITH_OPENSSL` or `#WITH_GNUTLS`.
 
 @see `#SOAP_SSL_RSA_BITS`, `::soap_ssl_client_context`, `::soap_ssl_crl`.
 */
@@ -6146,22 +6101,20 @@ int soap_ssl_server_context(
     const char *cafile,   ///< file with certificates in PEM format or NULL
     const char *capath,   ///< directory to certificates
     const char *dhfile,   ///< file with DH parameters or numeric string value to generate DH parameters or NULL
-    const char *randfile, ///< file to seed the PRNG or NULL
+    const char *randfile, ///< file to see the PRNG or NULL
     const char *sid)      ///< a unique server id for session caching or NULL
   /// @returns `#SOAP_OK` or a `::soap_status` error code
   ;
 
 /// Initialize the client-side SSL/TLS context
 /**
-This function initializes the client-side SSL/TLS context of the OpenSSL, GNUTLS, or WolfSSL.  The `flags` parameter initializes the context with a combination of `::soap_ssl_flags`.  The `keyfile` parameter when non-NULL is the client's private key PEM file, typically concatenated with its certificate in the PEM file.  The client's key is normally NULL and should only be specified if the server requires client authentication.  The `password` parameter when non-NULL is used to unlock the password-protected private key in the key file.  The `cafile` parameter when non-NULL is used to authenticate servers and contains the CA certificates of the server or servers.  Alternatively, a directory name `capath` can be specified to point to a directory with the certificate(s).  The `randfile` parameter when non-NULL can be used to seed the PRNG using the specified file with random data.  Returns `#SOAP_OK` or a `::soap_status` error code.
+This function initializes the client-side SSL/TLS context of the OpenSSL or GNUTLS library.  The `flags` parameter initializes the context with a combination of `::soap_ssl_flags`.  The `keyfile` parameter when non-NULL is the server's private key PEM file, typically concatenated with its certificate in the PEM file.  The `password` parameter when non-NULL is used to unlock the password-protected private key in the key file.  The `cafile` parameter when non-NULL is used to authenticate clients when the `#SOAP_SSL_REQUIRE_CLIENT_AUTHENTICATION` flag is used and contains the client or CA certificate(s).  Alternatively, a directory name `capath` can be specified to point to a directory with the certificate(s).  The `randfile` parameter when non-NULL can be used to seed the PRNG using the specified file with random data.  Returns `#SOAP_OK` or a `::soap_status` error code.
 
 All strings passed to this function must be persistent in memory until the SSL/TLS context is implicitly deleted when the `::soap` context is deleted.
 
 After `::soap_ssl_client_context` initialization you can select a specific cipher list using OpenSSL function `SSL_CTX_set_cipher_list(soap->ctx, "...")`.  When authentication requires the use of CRLs, you can use `::soap_ssl_crl` to specify a CRL file and to use any CRLs provided with SSL/TLS handshakes.
 
 All OpenSSL versions prior to 1.1.0 require mutex locks to be explicitly set up in your code for multi-threaded applications by calling `CRYPTO_thread_setup()` and `CRYPTO_thread_cleanup()`.
-
-Keychains can be used as an alternative to the `cafile` and `capath` parameters.  See the gsoap/samples/ssl files `ssl_setup.h`, `ssl_setup.c` and `ssl_setup.cpp` for details.
 
 @par Examples:
 
@@ -6270,7 +6223,7 @@ if (soap_ssl_client_context(soap,
 
 ~~~
 
-@note Requires compilation with `#WITH_OPENSSL`, `#WITH_GNUTLS`, or `#WITH_WOLFSSL`.
+@note Requires compilation with `#WITH_OPENSSL` or `#WITH_GNUTLS`.
 
 @see `#SOAP_SSL_RSA_BITS`, `::soap_ssl_server_context`, `::soap_ssl_crl`, `::soap::fsslverify`.
 */
@@ -6281,7 +6234,7 @@ int soap_ssl_client_context(
     const char *password, ///< password to unlock the private key or NULL
     const char *cafile,   ///< file with certificates in PEM format or NULL
     const char *capath,   ///< directory to certificates
-    const char *randfile) ///< file to seed the PRNG or NULL
+    const char *randfile) ///< file to see the PRNG or NULL
   /// @returns `#SOAP_OK` or a `::soap_status` error code
   ;
 
@@ -6289,7 +6242,7 @@ int soap_ssl_client_context(
 /**
 This function enables SSL/TLS CRL checking during the SSL/TLS handshake.  The `crlfile` when non-NULL specifies a file with CRLs in PEM format.  Returns `#SOAP_OK` or a `::soap_status` error code.
 
-@note Requires compilation with `#WITH_OPENSSL`, `#WITH_GNUTLS`, or `#WITH_WOLFSSL`.
+@note Requires compilation with `#WITH_OPENSSL` or `#WITH_GNUTLS`.
 
 @see `::soap_ssl_server_context`, `::soap_ssl_client_context`, `::soap_ssl_crl`.
 */
@@ -6397,9 +6350,9 @@ void *process_request(struct soap *soap)
 }
 ~~~
 
-@note Requires compilation with `#WITH_OPENSSL`, `#WITH_GNUTLS`, or `#WITH_WOLFSSL` and TLS/SSL server context initialization with `::soap_ssl_server_context`.
+@note Requires compilation with `#WITH_OPENSSL` or `#WITH_GNUTLS` and SSL server context initialization with `::soap_ssl_server_context`.
 
-@see `#WITH_OPENSSL`, `#WITH_GNUTLS`, `#WITH_WOLFSSL`, `::soap_ssl_server_context`, `::soap_ssl_crl`, `::soap_bind`, `::soap_accept`.
+@see `#WITH_OPENSSL`, `#WITH_GNUTLS`, `::soap_ssl_server_context`, `::soap_ssl_crl`, `::soap_bind`, `::soap_accept`.
 */
 int soap_ssl_accept(struct soap *soap)
   /// @returns `#SOAP_OK` or a `::soap_status` error code

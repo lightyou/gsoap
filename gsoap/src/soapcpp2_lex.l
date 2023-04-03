@@ -98,7 +98,7 @@ id              (:?{alpha})(:?{alpha}|{digit}|::)*
 tag             `[^`\t\v\r\f\n>]+`
 int             {digit}+[lLuU]*
 hex             0[xX][0-9a-fA-F]+[lLuU]*
-num             ({digit}*\.{digit}+([Ee][+-]?{digit}+)?|{digit}+(\.{digit}+)?[Ee][+-]?{digit}+)[fFlL]?|{digit}+[fF]
+num             {digit}+(\.{digit}+([Ee][+-]?{digit}+)?|(\.{digit}+)?[Ee][+-]?{digit}+)[fFlL]?|{digit}+[fF]
 chr             '(\\'|[^'\n])*'
 str             L?\"(\\\"|\\\n|[^"])*\"
 module          #{ws}*module{ws}+.*\n
@@ -921,10 +921,10 @@ static void option(void)
                                 if (yytext[i+1] == '+' && yytext[i+2] == '+')
                                 {
                                         i += 2;
-                                        if (isdigit(yytext[i+1]) && isdigit(yytext[i+2]))
+                                        if (yytext[i+1] == '1' && yytext[i+2] == '1')
                                         {
-                                                c11flag = 10*(yytext[i+1] - '0') + yytext[i+2] - '0';
                                                 i += 2;
+                                                c11flag = 1;
                                         }
                                         cflag = 0;
                                 }

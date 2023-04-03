@@ -308,11 +308,6 @@ struct value * nth_value(struct value *v, int n)
   }
 }
 
-void clear_value(struct value *v)
-{
-  soap_default_value(v->soap, v);
-}
-
 void set_struct(struct value *v)
 {
   if (v->__type != SOAP_TYPE__struct || !v->ref)

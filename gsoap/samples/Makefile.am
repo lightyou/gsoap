@@ -8,5 +8,5 @@ SUBDIRS = \
 	factory factorytest \
 	gmt googleapi hello httpcookies lu magic mashup mashup++ \
 	chaining chaining++ primes \
-	mtom mtom-stream polytest roll router atom rss ssl template udp tcp varparam \
+	mtom mtom-stream polytest roll router atom rss ssl template udp varparam \
 	wsa wsrm xml-rpc-json rest async testmsgr wsse wst

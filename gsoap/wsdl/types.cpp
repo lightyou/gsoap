@@ -69,21 +69,14 @@ static const char *keywords[] =
   "case",
   "catch",
   "char",
-  "char8_t",
   "char16_t",
   "char32_t",
   "class",
   "compl",
-  "concept",
   "const",
-  "consteval",
   "constexpr",
-  "constinit",
   "const_cast",
   "continue",
-  "co_await",
-  "co_return",
-  "co_yield",
   "decltype",
   "default",
   "delete",
@@ -116,7 +109,6 @@ static const char *keywords[] =
   "mutable",
   "namespace",
   "new",
-  "noexcept",
   "not",
   "not_eq",
   "NULL",
@@ -131,7 +123,6 @@ static const char *keywords[] =
   "public",
   "register",
   "reinterpret_cast",
-  "requires",
   "restrict",
   "return",
   "short",
@@ -279,37 +270,26 @@ int Types::read(const char *file)
               modtypemap[s] = r;
             }
             else
-            {
               modtypemap[s] = estrdup(def);
-            }
           }
           else
           {
             if (*def)
             {
-              if (strcmp(def, "...") != 0)
+              if (strcmp(def, "..."))
               {
                 deftypemap[s] = estrdup(def);
                 ctypemap[s] = ctype(def);
               }
             }
             else
-            {
               deftypemap[s] = "";
-            }
             if (*use)
-            {
               usetypemap[s] = estrdupf(use);
-            }
             else
-            {
               usetypemap[s] = estrdupf(xsd);
-            }
             if (*ptr)
-            {
               ptrtypemap[s] = estrdupf(ptr);
-              smptypemap[s] = ptrtypemap[s];
-            }
             else
             {
               MapOfStringToString::iterator i = ptrtypemap.find(s);
@@ -1044,9 +1024,9 @@ const char *Types::pname(bool flag, bool smart, const char *prefix, const char *
   if (flag)
   {
     const char *r = NULL;
-    MapOfStringToString::const_iterator i;
-    if (!cflag && smart && (r = vname("$OPTIONAL")) && *r != '*' && *r != '$' && ((i = smptypemap.find(t)) != smptypemap.end() || ctype(t) != CTNONE))
+    if (!cflag && smart && (r = vname("$POINTER")) && *r != '*' && *r != '$')
     {
+      MapOfStringToString::const_iterator i = smptypemap.find(t);
       if (i != smptypemap.end())
       {
         s = (*i).second;
@@ -1059,9 +1039,9 @@ const char *Types::pname(bool flag, bool smart, const char *prefix, const char *
         if (!s)
         {
           s = t;
-          fprintf(stream, "\n/// @todo !FIXME! @warning Undefined QName %s for type %s, check WSDL and schema definitions.\n", qname, t);
+          fprintf(stream, "\n/// @todo !FIXME! @warning Undefined QName %s for pointer to type %s, check WSDL and schema definitions.\n", qname, t);
           if (vflag)
-            fprintf(stderr, "\nWarning: undefined QName %s for type %s in namespace \"%s\"\n", qname, t, URI ? URI : "?");
+            fprintf(stderr, "\nWarning: undefined QName %s for pointer to type %s in namespace \"%s\"\n", qname, t, URI ? URI : "?");
         }
         if (!is_ptr(prefix, URI, qname))
         {
@@ -1075,48 +1055,13 @@ const char *Types::pname(bool flag, bool smart, const char *prefix, const char *
           s = p;
         }
         if (vflag)
-          std::cerr << "Mapping optional '" << t << "' to '" << s << "'" << std::endl;
-        smptypemap[t] = s;
-      }
-    }
-    else if (!cflag && smart && (r = vname("$POINTER")) && *r != '*' && *r != '$')
-    {
-      i = smptypemap.find(t);
-      if (i != smptypemap.end())
-      {
-        s = (*i).second;
-      }
-      else
-      {
-        i = usetypemap.find(t);
-        if (i != usetypemap.end())
-          s = (*i).second;
-        if (!s)
-        {
-          s = t;
-          fprintf(stream, "\n/// @todo !FIXME! @warning Undefined QName %s for smart pointer to type %s, check WSDL and schema definitions.\n", qname, t);
-          if (vflag)
-            fprintf(stderr, "\nWarning: undefined QName %s for smart pointer to type %s in namespace \"%s\"\n", qname, t, URI ? URI : "?");
-        }
-        if (!is_ptr(prefix, URI, qname))
-        {
-          size_t k = strlen(r);
-          size_t l = strlen(s);
-          char *p = (char*)emalloc(k + l + 4);
-          soap_strcpy(p, k + l + 4, r);
-          soap_strcpy(p + k, l + 4, "<");
-          soap_strcpy(p + k + 1, l + 3, s);
-          soap_strcpy(p + k + l + 1, 3, "> ");
-          s = p;
-        }
-        if (vflag)
-          std::cerr << "Mapping smart pointer of '" << t << "' to '" << s << "'" << std::endl;
+          std::cerr << "Mapping \"smart\" pointer of '" << t << "' to '" << s << "'" << std::endl;
         smptypemap[t] = s;
       }
     }
     else
     {
-      i = ptrtypemap.find(t);
+      MapOfStringToString::const_iterator i = ptrtypemap.find(t);
       if (i != ptrtypemap.end())
       {
         s = (*i).second;
@@ -1219,11 +1164,7 @@ const char *Types::deftname(enum Type type, bool mk_pointer, bool is_pointer, co
     ++n;
   }
   soap_strcpy(buf + n, sizeof(buf) - n, t);
-  const char *r = NULL;
-  if (type == ENUM || type == TYPEDEF)
-    r = vname("$OPTIONAL");
-  if (!r || *r == '*' || *r == '$')
-    r = vname("$POINTER");
+  const char *r = vname("$POINTER");
   if (!cflag && !is_pointer && r && *r != '*' && *r != '$')
   {
     n = strlen(buf);
@@ -3131,9 +3072,7 @@ void Types::gen(const char *URI, const xs__attribute& attribute, SetOfString& me
       fprintf(stream, attrtemplateformat_open, r, "\n");
     }
     else
-    {
       fprintf(stream, "@");
-    }
     gen(URI, name, *attribute.simpleTypePtr(), true, false);
     if (r && *r != '*' && *r != '$')
       fprintf(stream, elementformat, s, aname(nameprefix, nameURI, name, &members));
@@ -3714,7 +3653,7 @@ void Types::gen(const char *URI, const xs__element& element, bool substok, const
         if (is_integer(max))
           fprintf(stream, ":%s", max);
         fprintf(stream, ";\n");
-        fprintf(stream, pointerformat, pname(true, false, "_", NULL, element.ref), aname(nameprefix, nameURI, element.ref, &members));
+        fprintf(stream, pointerformat, pname(true, true, "_", NULL, element.ref), aname(nameprefix, nameURI, element.ref, &members));
       }
       else
       {
@@ -4669,7 +4608,7 @@ CType Types::ctype(const char *t)
   {
     type = CTNONE;
   }
-  ctypemap[estrdup(t)] = type;
+  ctypemap[t] = type;
   return type;
 }
 

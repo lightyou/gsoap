@@ -1,13 +1,13 @@
 /*
         dom.c[pp]
 
-        DOM API v5 gSOAP 2.8.126
+        DOM API v5 gSOAP 2.8.117
 
         See gsoap/doc/dom/html/index.html for the new DOM API v5 documentation
         Also located in /gsoap/samples/dom/README.md
 
 gSOAP XML Web services tools
-Copyright (C) 2000-2023, Robert van Engelen, Genivia, Inc. All Rights Reserved.
+Copyright (C) 2000-2021, Robert van Engelen, Genivia, Inc. All Rights Reserved.
 This part of the software is released under ONE of the following licenses:
 GPL or the gSOAP public license.
 --------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 for the specific language governing rights and limitations under the License.
 
 The Initial Developer of the Original Code is Robert A. van Engelen.
-Copyright (C) 2000-2023, Robert van Engelen, Genivia Inc., All Rights Reserved.
+Copyright (C) 2000-2021, Robert van Engelen, Genivia Inc., All Rights Reserved.
 --------------------------------------------------------------------------------
 GPL license.
 
@@ -50,30 +50,16 @@ A commercial use license is available from Genivia, Inc., contact@genivia.com
 */
 
 /** Compatibility requirement with gSOAP engine version */
-#define GSOAP_LIB_VERSION 208126
-
-/* silence GNU's warnings on format nonliteral strings and truncation (snprintf truncates on purpose for safety) */
-#ifdef __GNUC__
-# define GCC_VERSION_AT_LEAST(major, minor, patch) (GCC_VERSION >= (major * 10000 + minor * 100 + patch))
-# pragma GCC diagnostic ignored "-Wformat-nonliteral"
-# if GCC_VERSION_AT_LEAST(7, 0, 0)
-#  pragma GCC diagnostic ignored "-Wformat-truncation"
-# endif
-#endif
-
-/* convert EBCDIC to ASCII */
-#ifdef AS400
-# pragma convert(819)
-#endif
-
-#ifdef __BORLANDC__
-# pragma warn -8060
-#endif
+#define GSOAP_LIB_VERSION 208117
 
 #include "stdsoap2.h"
 
 #if GSOAP_VERSION != GSOAP_LIB_VERSION
 # error "GSOAP VERSION MISMATCH IN LIBRARY: PLEASE REINSTALL PACKAGE"
+#endif
+
+#ifdef __BORLANDC__
+# pragma warn -8060
 #endif
 
 SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_xsd__anyType(struct soap*, const struct soap_dom_element *);
@@ -1158,8 +1144,6 @@ soap_ns_to_find(struct soap *soap, const char *tag)
 static int soap_tag_match(const char *name, const char *tag)
 {
   const char *s;
-  if (!tag)
-    return 0;
   if (!name)
     return !*tag;
   s = strchr(name, ':');
@@ -1176,8 +1160,6 @@ static int soap_tag_match(const char *name, const char *tag)
 static int soap_patt_match(const char *name, const char *patt)
 {
   const char *s;
-  if (!patt)
-    return 0;
   if (!name)
     return !*patt;
   s = strchr(name, ':');
@@ -1193,30 +1175,29 @@ static int soap_patt_match(const char *name, const char *patt)
 
 static int soap_name_match(const char *name, const char *patt)
 {
-  const char *a = NULL;
-  const char *b = NULL;
   for (;;)
   {
     int c1 = *name;
     int c2 = *patt;
     if (!c1)
       break;
-    if (c2 == '*')
+    if (c1 != c2)
     {
+      if (c2 != '*')
+        return 0;
       c2 = *++patt;
       if (!c2)
         return 1;
-      a = name;
-      b = patt;
-      continue;
-    }
-    if (c1 != c2)
-    {
-      if (!a)
-        return 0;
-      name = ++a;
-      patt = b;
-      continue;
+      for (;;)
+      {
+        c1 = *name;
+        if (!c1)
+          break;
+        if (c1 == c2 && soap_name_match(name + 1, patt + 1))
+          return 1;
+        name++;
+      }
+      break;
     }
     name++;
     patt++;
@@ -1694,7 +1675,9 @@ struct soap_dom_element *
 SOAP_FMAC2
 soap_elt_bool(struct soap_dom_element *elt, LONG64 b)
 {
-  return soap_elt_text(elt, b ? "true" : "false");
+  if (elt)
+    elt->text = b ? "true" : "false";
+  return elt;
 }
 
 /******************************************************************************/
@@ -2363,7 +2346,9 @@ struct soap_dom_attribute *
 SOAP_FMAC2
 soap_att_bool(struct soap_dom_attribute *att, LONG64 b)
 {
-  return soap_att_text(att, b ? "true" : "false");
+  if (att)
+    att->text = b ? "true" : "false";
+  return att;
 }
 
 /******************************************************************************/

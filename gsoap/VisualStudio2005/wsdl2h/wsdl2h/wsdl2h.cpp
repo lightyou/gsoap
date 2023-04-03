@@ -5,7 +5,7 @@
 
 --------------------------------------------------------------------------------
 gSOAP XML Web services tools
-Copyright (C) 2000-2023, Robert van Engelen, Genivia Inc. All Rights Reserved.
+Copyright (C) 2000-2021, Robert van Engelen, Genivia Inc. All Rights Reserved.
 This software is released under one of the following licenses:
 GPL.
 --------------------------------------------------------------------------------
@@ -127,12 +127,12 @@ const char sizeparaformat[]            = "  $ %-35s __size%s%s";
 const char pointertemplateparaformat[] = "    %s<%-21s>*%s%s%s";
 const char derivedformat[]             = "  [ %-35s *%-30s; ]";
 
-const char copyrightnotice[] = "\n**  The gSOAP WSDL/WADL/XSD processor for C and C++, wsdl2h release " WSDL2H_VERSION "\n**  Copyright (C) 2000-2023 Robert van Engelen, Genivia Inc.\n**  All Rights Reserved. This product is provided \"as is\", without any warranty.\n**  The wsdl2h tool and its generated software are released under the GPL.\n**  ----------------------------------------------------------------------------\n**  A commercial use license is available from Genivia Inc., contact@genivia.com\n**  ----------------------------------------------------------------------------\n\n";
+const char copyrightnotice[] = "\n**  The gSOAP WSDL/WADL/XSD processor for C and C++, wsdl2h release " WSDL2H_VERSION "\n**  Copyright (C) 2000-2021 Robert van Engelen, Genivia Inc.\n**  All Rights Reserved. This product is provided \"as is\", without any warranty.\n**  The wsdl2h tool and its generated software are released under the GPL.\n**  ----------------------------------------------------------------------------\n**  A commercial use license is available from Genivia Inc., contact@genivia.com\n**  ----------------------------------------------------------------------------\n\n";
 
 const char licensenotice[]   = "\
 --------------------------------------------------------------------------------\n\
 gSOAP XML Web services tools\n\
-Copyright (C) 2000-2023, Robert van Engelen, Genivia Inc. All Rights Reserved.\n\
+Copyright (C) 2000-2021, Robert van Engelen, Genivia Inc. All Rights Reserved.\n\
 The wsdl2h tool and its generated software are released under the GPL.\n\
 This software is released under the GPL with the additional exemption that\n\
 compiling, linking, and/or using OpenSSL is allowed.\n\
@@ -267,10 +267,10 @@ static void options(int argc, char **argv)
             if (a[1] == '+' && a[2] == '+')
             {
               a += 2;
-              if (isdigit(a[1]) && isdigit(a[2]))
+              if (a[1] == '1' && a[2] == '1')
               {
-                c11flag = 10*(a[1] - '0') + a[2] - '0'; /* 11 = c++11, 14 = c++14, etc */
                 a += 2;
+                c11flag = 1;
               }
               cflag = 0;
             }
@@ -522,15 +522,13 @@ static void options(int argc, char **argv)
           }
           case '?':
           case 'h':
-            fprintf(stderr, "Usage: wsdl2h [-a] [-b] [-c|-c++|-c++11|-c++14|-c++17] [-D] [-d] [-e] [-F] [-f] [-g] [-h] [-I path] [-i] [-j] [-k] [-L] [-l] [-M] [-m] [-N name] [-n name] [-O1|-O2|-O3|-O4|-Ow2|-Ow3|-Ow4] [-P|-p] [-Q] [-q name] [-R] [-r proxyhost[:port[:uid:pwd]]] [-r:uid:pwd] [-Sname] [-s] [-T] [-t typemapfile] [-U] [-u] [-V] [-v] [-w] [-W] [-x] [-y] [-z#] [-_] [-o outfile.h] infile.wsdl infile.xsd http://www... ...\n\n");
+            fprintf(stderr, "Usage: wsdl2h [-a] [-b] [-c|-c++|-c++11] [-D] [-d] [-e] [-F] [-f] [-g] [-h] [-I path] [-i] [-j] [-k] [-L] [-l] [-M] [-m] [-N name] [-n name] [-O1|-O2|-O3|-O4|-Ow2|-Ow3|-Ow4] [-P|-p] [-Q] [-q name] [-R] [-r proxyhost[:port[:uid:pwd]]] [-r:uid:pwd] [-Sname] [-s] [-T] [-t typemapfile] [-U] [-u] [-V] [-v] [-w] [-W] [-x] [-y] [-z#] [-_] [-o outfile.h] infile.wsdl infile.xsd http://www... ...\n\n");
             fprintf(stderr, "\
 -a      generate indexed struct names for local elements with anonymous types\n\
 -b      bi-directional operations (duplex ops) added to serve one-way responses\n\
 -c      generate C source code\n\
 -c++    generate C++ source code (default)\n\
 -c++11  generate C++11 source code\n\
--c++14  generate C++14 source code\n\
--c++17  generate C++17 source code\n\
 -D      make attribute members with default/fixed values optional with pointers\n\
 -d      use DOM to populate xs:any, xs:anyType, and xs:anyAttribute\n\
 -e      don't qualify enum names\n\
